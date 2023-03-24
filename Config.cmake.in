@@ -1,0 +1,8 @@
+@PACKAGE_INIT@
+
+include("${CMAKE_CURRENT_LIST_DIR}/CppSlippiTargets.cmake")
+
+check_required_components(CppSlippi)
+
+include(CMakeFindDependencyMacro)
+find_dependency(nlohmann_json)
