@@ -13,17 +13,12 @@ namespace cpp_slippi::parsing {
 
 class Parser {
 public:
-	Parser(Options options, Handlers& handlers, reading::Reader& reader) :
-		options_(std::move(options)),
-		handlers_(handlers),
-		reader_(reader) {}
+	explicit Parser(Options options) : options_(std::move(options)) {}
 
-	void parseGame();
+	void parseGame(Handlers& handlers, reading::Reader& reader);
 
 private:
 	Options options_;
-	Handlers& handlers_;
-	reading::Reader& reader_;
 };
 
 }  // namespace cpp_slippi::parsing

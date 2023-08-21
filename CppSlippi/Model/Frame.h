@@ -2,9 +2,7 @@
 
 #include <array>
 #include <cstdint>
-#include <memory>
 #include <optional>
-#include <variant>
 #include <vector>
 
 #include "CppSlippi/Model/Buttons.h"

@@ -9,6 +9,7 @@
 
 #include <nlohmann/json.hpp>
 
+#include "CppSlippi/Model.h"
 #include "CppSlippi/Parsing/BlockReader.h"
 #include "CppSlippi/Parsing/FrameEventProcessor.h"
 #include "CppSlippi/Parsing/ParseException.h"
@@ -43,15 +44,8 @@ struct MessageSplitter {
 		uint8_t bytes[0x200];
 	};
 
-	// This is split up so the endian-ness won't accidentally be swapped when
-	// passing to split message parsers. This is not the most elegant solution.
-	struct ActualSize {
-		uint8_t high;
-		uint8_t low;
-	};
-
 	Payload payload;
-	ActualSize actualSize;
+	uint16_t actualSize;
 	EventType internalCommand;
 	bool lastMessage;
 };
@@ -89,7 +83,7 @@ nlohmann::json readMetadata(Reader& reader) {
 // Skip to the end of the stream to read the metadata, if possible.
 std::optional<nlohmann::json> skipReadMetadata(
 		Reader& reader, std::optional<uint32_t> length, const std::unordered_map<EventType, uint16_t>& payloadSizes) {
-	if (!length) {
+	if (!length || !reader.seekable()) {
 		return std::nullopt;
 	}
 	size_t savedPosition = reader.position();
@@ -361,7 +355,7 @@ private:
 				}
 				break;
 			} case EventType::GECKO_CODES: {
-				throw ParseException("Gecko Codes only supported through Message Splitter.");
+				throw ParseException("Gecko Codes are only supported through Message Splitter.");
 				break;
 			} default: {
 				// Unknown event type, just skip it.
@@ -381,7 +375,7 @@ private:
 				// tells us which parser to construct.
 				MessageSplitter splitter = {
 					.payload = reader.read<MessageSplitter::Payload>(0x1),
-					.actualSize = reader.read<MessageSplitter::ActualSize>(0x201),
+					.actualSize = reader.read<uint16_t>(0x201),
 					.internalCommand = reader.read<EventType>(0x203),
 					.lastMessage = reader.read<bool>(0x204),
 				};
@@ -808,14 +802,14 @@ private:
 
 
 // Parse a replay from an input stream using the given event handlers.
-void Parser::parseGame() {
+void Parser::parseGame(Handlers& handlers, reading::Reader& reader) {
 	// For speed, assume the `raw` element comes first and handle it manually.
 	// The official JS parser does this too, so it should be reliable.
-	reader_.expectBytes("{U\x03raw[$U#l");
+	reader.expectBytes("{U\x03raw[$U#l");
 
-	auto rawLength = reader_.read<uint32_t>();
+	auto rawLength = reader.read<uint32_t>();
 
-	auto [bytesRead, payloadSizes] = parseEventPayloads(reader_);
+	auto [bytesRead, payloadSizes] = parseEventPayloads(reader);
 
 	std::optional<uint32_t> remainingLength = rawLength > 0 ? std::make_optional(rawLength - bytesRead) : std::nullopt;
 
@@ -825,7 +819,7 @@ void Parser::parseGame() {
 	std::optional<uint32_t> numFramesFromMetadata;
 	std::optional<nlohmann::json> rawMetadata; 
 	if (options_.rollback != Options::Rollback::ALL) {
-		rawMetadata = skipReadMetadata(reader_, remainingLength, payloadSizes);
+		rawMetadata = skipReadMetadata(reader, remainingLength, payloadSizes);
 		if (rawMetadata) {
 			auto lastFrame = tryGet<int32_t>(*rawMetadata, "lastFrame");
 			if (lastFrame) {
@@ -835,17 +829,17 @@ void Parser::parseGame() {
 		}
 	}
 
-	EventParser eventParser(options_, handlers_, payloadSizes, numFramesFromMetadata, reader_);
+	EventParser eventParser(options_, handlers, payloadSizes, numFramesFromMetadata, reader);
 	eventParser.parseEvents(remainingLength);
 
 	if (options_.interestedEvents & Options::InterestedEvents::METADATA) {
 		if (!rawMetadata) {
-			rawMetadata = readMetadata(reader_);
+			rawMetadata = readMetadata(reader);
 		}
 		Metadata metadata = parseMetadata(*rawMetadata);
-		handlers_.metadata(metadata, *rawMetadata);
+		handlers.metadata(metadata, *rawMetadata);
 	}
-	handlers_.finalize();
+	handlers.finalize();
 }
 
 }  // namespace cpp_slippi::parsing

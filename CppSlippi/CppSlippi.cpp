@@ -8,8 +8,8 @@
 namespace cpp_slippi {
 
 void parse(reading::Reader& reader, Handlers& handlers, Options options) {
-	parsing::Parser parser(options, handlers, reader);
-	parser.parseGame();
+	parsing::Parser parser(options);
+	parser.parseGame(handlers, reader);
 }
 
 Game game(reading::Reader& reader, Options options) {

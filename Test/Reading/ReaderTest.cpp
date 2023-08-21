@@ -5,9 +5,10 @@
 #include <exception>
 #include <filesystem>
 #include <format>
+#include <fstream>
+#include <memory>
 #include <string>
 #include <string_view>
-#include <fstream>
 
 #include <gtest/gtest.h>
 
@@ -54,7 +55,7 @@ template<>
 class ReaderFixture<IStreamReader<std::fstream>> {
 public:
 	ReaderFixture(std::filesystem::path path, bool seekable) :
-	reader_(std::fstream(path, std::ios::in | std::ios::binary), seekable) {}
+	reader_(std::make_unique<std::fstream>(path, std::ios::in | std::ios::binary), seekable) {}
 
 	IStreamReader<std::fstream>& reader() {
 		return reader_;

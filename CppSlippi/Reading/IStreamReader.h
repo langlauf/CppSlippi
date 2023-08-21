@@ -3,6 +3,7 @@
 #include <concepts>
 #include <ios>
 #include <istream>
+#include <memory>
 
 #include "CppSlippi/Reading/Reader.h"
 
@@ -17,17 +18,17 @@ template<typename S>
 requires std::derived_from<S, std::istream>
 class IStreamReader final : public Reader {
 public:
-	explicit IStreamReader(S stream, bool seekable = true) : Reader(seekable), stream_(std::move(stream)) {
-		stream_.exceptions(std::ios::badbit);
+	explicit IStreamReader(std::unique_ptr<S> stream, bool seekable = true) : Reader(seekable), stream_(std::move(stream)) {
+		stream_->exceptions(std::ios::badbit);
 	}
 
 	bool eof() const override {
-		return stream_.eof();
+		return stream_->eof();
 	}
 
 protected:
 	char peek() override {
-		int c = stream_.peek();
+		int c = stream_->peek();
 		if (c == S::traits_type::eof()) {
 			throw ReadException("No bytes left to read.");
 		}
@@ -35,19 +36,19 @@ protected:
 	}
 
 	size_t doRead(char* dest, size_t count) override {
-		stream_.read(dest, count);
-		return static_cast<size_t>(stream_.gcount());
+		stream_->read(dest, count);
+		return static_cast<size_t>(stream_->gcount());
 	}
 
 	void doSeek(size_t offset, int dir) override {
-		stream_.clear();
-		stream_.seekg(offset, dirToSeekDir(dir));
+		stream_->clear();
+		stream_->seekg(offset, dirToSeekDir(dir));
 		// Ensure that the EOF bit is set.
-		stream_.peek();
+		stream_->peek();
 	}
 
 	void doSkip(size_t offset) override {
-		stream_.ignore(offset);
+		stream_->ignore(offset);
 	}
 
 private:
@@ -61,7 +62,7 @@ private:
 		}
 	}
 
-	S stream_;
+	std::unique_ptr<S> stream_;
 };
 
 }  // namespace cpp_slippi::reading
