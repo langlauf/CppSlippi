@@ -29,7 +29,7 @@ template<typename T>
 requires std::is_enum_v<T>
 constexpr std::endian kEndian<T> = kEndian<std::underlying_type_t<T>>;
 
-template<special_enum T>
+template<utils::special_enum T>
 constexpr std::endian kEndian<T> = kEndian<typename T::Enum>;
 
 template<typename T>

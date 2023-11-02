@@ -9,7 +9,7 @@
 namespace cpp_slippi {
 
 class Stage {
-	DEFINE_ENUM(Stage, uint16_t,
+	CPP_SLIPPI_DEFINE_ENUM(Stage, uint16_t,
 		FOUNTAIN_OF_DREAMS = 2,
 		POKEMON_STADIUM = 3,
 		PRINCESS_PEACHS_CASTLE = 4,

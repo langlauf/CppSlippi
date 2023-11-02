@@ -10,7 +10,7 @@ namespace cpp_slippi {
 
 // Also called external character.
 class CssCharacter {
-	DEFINE_ENUM(CssCharacter, uint8_t,
+	CPP_SLIPPI_DEFINE_ENUM(CssCharacter, uint8_t,
 		CAPTAIN_FALCON = 0,
 		DONKEY_KONG = 1,
 		FOX = 2,
@@ -123,7 +123,7 @@ public:
 
 // Also called internal character.
 class InGameCharacter {
-	DEFINE_ENUM(InGameCharacter, uint8_t,
+	CPP_SLIPPI_DEFINE_ENUM(InGameCharacter, uint8_t,
 		MARIO = 0,
 		FOX = 1,
 		CAPTAIN_FALCON = 2,

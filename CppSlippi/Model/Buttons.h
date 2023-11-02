@@ -31,7 +31,8 @@ public:
 		CSTICK_DOWN = 1u << 21,
 		CSTICK_LEFT = 1u << 22,
 		CSTICK_RIGHT = 1u << 23,
-		TRIGGER_ANALOG = 1u << 31,
+		// Any trigger.
+		TRIGGER = 1u << 31,
 	};
 
 	enum class Physical : uint16_t {

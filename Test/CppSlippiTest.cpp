@@ -57,12 +57,12 @@ TEST(CppSlippi, OldVersion) {
 
 	EXPECT_EQ(game.start->slippi.version, Slippi::Version({0, 1, 0}));
 
-	EXPECT_THAT(game.start->players[0],
+	EXPECT_THAT(game.start->players[Port::P1],
 		Optional(Field("character", &Player::character, Eq(CssCharacter::FOX))));
-	EXPECT_THAT(game.start->players[1],
+	EXPECT_THAT(game.start->players[Port::P2],
 		Optional(Field("character", &Player::character, Eq(CssCharacter::GANONDORF))));
-	EXPECT_EQ(game.start->players[2], std::nullopt);
-	EXPECT_EQ(game.start->players[3], std::nullopt);
+	EXPECT_EQ(game.start->players[Port::P3], std::nullopt);
+	EXPECT_EQ(game.start->players[Port::P4], std::nullopt);
 }
 
 TEST(CppSlippi, BasicGame) {
@@ -260,8 +260,8 @@ TEST(CppSlippi, IceClimbers) {
 	ASSERT_TRUE(game.metadata->players.has_value());
 	EXPECT_THAT(game.metadata->players->at(0), Optional(MetadataPlayerEq(expected)));
 
-	ASSERT_TRUE(game.start->players[0].has_value());
-	EXPECT_THAT(game.start->players[0]->character, CssCharacter::ICE_CLIMBERS);
+	ASSERT_TRUE(game.start->players[Port::P1].has_value());
+	EXPECT_THAT(game.start->players[Port::P1]->character, CssCharacter::ICE_CLIMBERS);
 
 	ASSERT_THAT(game.frames, Not(IsEmpty()));
 	ASSERT_TRUE(game.frames[0].ports[Port::P1].has_value());
@@ -270,13 +270,13 @@ TEST(CppSlippi, IceClimbers) {
 
 TEST(CppSlippi, Ucf) {
 	Game shieldDrop = parseGame("shield_drop.slp");
-	ASSERT_TRUE(shieldDrop.start->players[0].has_value());
-	EXPECT_THAT(shieldDrop.start->players[0]->ucf,
+	ASSERT_TRUE(shieldDrop.start->players[Port::P1].has_value());
+	EXPECT_THAT(shieldDrop.start->players[Port::P1]->ucf,
 		Optional(UcfEq({Ucf::DashBack::OFF, Ucf::ShieldDrop::UCF})));
 
 	Game dashBack = parseGame("dash_back.slp");
-	ASSERT_TRUE(dashBack.start->players[0].has_value());
-	EXPECT_THAT(dashBack.start->players[0]->ucf,
+	ASSERT_TRUE(dashBack.start->players[Port::P1].has_value());
+	EXPECT_THAT(dashBack.start->players[Port::P1]->ucf,
 		Optional(UcfEq({Ucf::DashBack::UCF, Ucf::ShieldDrop::OFF})));
 }
 
@@ -285,23 +285,23 @@ TEST(CppSlippi, ButtonsLzrs) {
 
 	ASSERT_THAT(game.frames, SizeIs(Ge(1049)));
 	EXPECT_THAT(game.frames[151].ports[Port::P1]->leader.pre->buttons,
-		ButtonsEq({Buttons::Logical::TRIGGER_ANALOG,
-			       Buttons::Physical::NONE}));
+		ButtonsEq({Buttons::Logical::TRIGGER,
+		           Buttons::Physical::NONE}));
 	EXPECT_THAT(game.frames[172].ports[Port::P1]->leader.pre->buttons,
-		ButtonsEq({Buttons::Logical::TRIGGER_ANALOG | Buttons::Logical::L,
-			       Buttons::Physical::L}));
+		ButtonsEq({Buttons::Logical::TRIGGER | Buttons::Logical::L,
+		           Buttons::Physical::L}));
 	EXPECT_THAT(game.frames[535].ports[Port::P1]->leader.pre->buttons,
-		ButtonsEq({Buttons::Logical::TRIGGER_ANALOG,
-			       Buttons::Physical::NONE}));
+		ButtonsEq({Buttons::Logical::TRIGGER,
+		           Buttons::Physical::NONE}));
 	EXPECT_THAT(game.frames[571].ports[Port::P1]->leader.pre->buttons,
-		ButtonsEq({Buttons::Logical::TRIGGER_ANALOG | Buttons::Logical::R,
-			       Buttons::Physical::R}));
+		ButtonsEq({Buttons::Logical::TRIGGER | Buttons::Logical::R,
+		           Buttons::Physical::R}));
 	EXPECT_THAT(game.frames[929].ports[Port::P1]->leader.pre->buttons,
-		ButtonsEq({Buttons::Logical::TRIGGER_ANALOG | Buttons::Logical::A | Buttons::Logical::Z,
-			       Buttons::Physical::Z}));
+		ButtonsEq({Buttons::Logical::TRIGGER | Buttons::Logical::A | Buttons::Logical::Z,
+		           Buttons::Physical::Z}));
 	EXPECT_THAT(game.frames[1049].ports[Port::P1]->leader.pre->buttons,
 		ButtonsEq({Buttons::Logical::START,
-				   Buttons::Physical::START}));
+		           Buttons::Physical::START}));
 }
 
 TEST(CppSlippi, ButtonsAbxy) {
@@ -479,6 +479,20 @@ TEST(CppSlippi, v3_12) {
 	};
 
 	EXPECT_THAT(game.start, Optional(GameStartEq(expectedStart)));
+}
+
+TEST(CppSlippi, CorruptNames_ParsedSafely) {
+	// P1's names in this file are all missing null-terminators.
+	Game game = parseGame("corrupt_names.slp", { .fullwidthToHalfwidth = true });
+
+	Netplay netplay = {
+		.name = "abcdefghijklmnopqrstuvwxyzabcd",
+		.code = "XX#11123",
+		.slippiUid = "abcdefghijklmnopqrstuvwxyzab",
+	};
+
+	EXPECT_THAT(*(game.start->players[Port::P1]->tag), testing::StrEq("abcdefghijklmnop"));
+	EXPECT_THAT(*(game.start->players[Port::P1]->netplay), NetplayEq(netplay));
 }
 
 TEST(CppSlippi, UnknownEvent_DoesNotThrowException) {

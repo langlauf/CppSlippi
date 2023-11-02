@@ -15,7 +15,7 @@ namespace cpp_slippi {
 struct Metadata {
 	struct Player {
 		// Contains the number of frames for which a character was used. This is
-		// mostly useful for Zelda/Sheik
+		// mostly useful for Zelda/Sheik.
 		//
 		// Ex: {'18': 5209} means the player used Marth (internal character ID
 		// 18) for all 5209 frames of the game

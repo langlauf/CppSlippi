@@ -7,7 +7,7 @@ namespace { extern const unsigned char convTable[25088]; }
 
 // Adapted from:
 // https://stackoverflow.com/questions/33165171/c-shiftjis-to-utf8-conversion
-std::string shiftJisToUtf8(std::string_view shiftJis, bool fullwidthToHalfwidth) {
+std::string ShiftJisConverter::toUtf8(std::string_view shiftJis) const {
 	std::string output;
 	// ShiftJis won't give 4 byte UTF8, so max. 3 byte per input char are needed.
 	output.reserve(3 * shiftJis.size());
@@ -40,7 +40,7 @@ std::string shiftJisToUtf8(std::string_view shiftJis, bool fullwidthToHalfwidth)
 		// Unicode number, guaranteed to fit in two bytes.
 		uint16_t unicodeValue = (convTable[arrayOffset] << 8) | convTable[arrayOffset + 1];
 
-		if (fullwidthToHalfwidth) {
+		if (fullwidthToHalfwidth_) {
 			if (unicodeValue >= 0xFF01 && unicodeValue < 0xFF5F) {
 				unicodeValue -= 0xFEE0;
 			} else if (unicodeValue == 0x3000) {

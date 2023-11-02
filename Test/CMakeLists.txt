@@ -17,7 +17,7 @@ add_executable(${This}
 	Parsing/FrameEventProcessorTest.cpp
 	Parsing/ShiftJisTest.cpp
 	Reading/ReaderTest.cpp
-	Utils/EndianTest.cpp "Model/Enums/ActionStateTest.cpp")
+	Utils/EndianTest.cpp)
 
 target_include_directories(${This} PRIVATE .)
 

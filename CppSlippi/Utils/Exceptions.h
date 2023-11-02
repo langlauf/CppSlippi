@@ -25,7 +25,7 @@ private:
 
 // Defines a new exception type that inherits from BaseException with no new
 // behavior.
-#define DEFINE_EXCEPTION(ExceptionName)                                             \
+#define CPP_SLIPPI_DEFINE_EXCEPTION(ExceptionName)                                  \
     class CPP_SLIPPI_API ExceptionName : public cpp_slippi::utils::BaseException {  \
     public:                                                                         \
         explicit ExceptionName(                                                     \

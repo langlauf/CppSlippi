@@ -24,7 +24,7 @@ using namespace std::string_view_literals;
 
 namespace cpp_slippi::reading {
 
-DEFINE_EXCEPTION(TestSetupException);
+CPP_SLIPPI_DEFINE_EXCEPTION(TestSetupException);
 
 
 static constexpr std::string_view kText =
@@ -55,13 +55,15 @@ template<>
 class ReaderFixture<IStreamReader<std::fstream>> {
 public:
 	ReaderFixture(std::filesystem::path path, bool seekable) :
-	reader_(std::make_unique<std::fstream>(path, std::ios::in | std::ios::binary), seekable) {}
+		stream_(path, std::ios::in | std::ios::binary),
+		reader_(stream_, seekable) {}
 
 	IStreamReader<std::fstream>& reader() {
 		return reader_;
 	}
 
 private:
+	std::fstream stream_;
 	IStreamReader<std::fstream> reader_;
 };
 

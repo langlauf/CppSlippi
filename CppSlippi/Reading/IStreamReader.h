@@ -18,17 +18,24 @@ template<typename S>
 requires std::derived_from<S, std::istream>
 class IStreamReader final : public Reader {
 public:
-	explicit IStreamReader(std::unique_ptr<S> stream, bool seekable = true) : Reader(seekable), stream_(std::move(stream)) {
-		stream_->exceptions(std::ios::badbit);
+	explicit IStreamReader(std::unique_ptr<S> stream, bool seekable = true)
+			: Reader(seekable), ownedStream_(std::move(stream)), stream_(*ownedStream_) {
+		stream_.exceptions(std::ios::badbit);
+	}
+
+	// Creates an IStreamReader that does not own the underlying stream.
+	explicit IStreamReader(S& stream, bool seekable = true)
+			: Reader(seekable), ownedStream_(nullptr), stream_(stream) {
+		stream_.exceptions(std::ios::badbit);
 	}
 
 	bool eof() const override {
-		return stream_->eof();
+		return stream_.eof();
 	}
 
 protected:
 	char peek() override {
-		int c = stream_->peek();
+		int c = stream_.peek();
 		if (c == S::traits_type::eof()) {
 			throw ReadException("No bytes left to read.");
 		}
@@ -36,19 +43,19 @@ protected:
 	}
 
 	size_t doRead(char* dest, size_t count) override {
-		stream_->read(dest, count);
-		return static_cast<size_t>(stream_->gcount());
+		stream_.read(dest, count);
+		return static_cast<size_t>(stream_.gcount());
 	}
 
 	void doSeek(size_t offset, int dir) override {
-		stream_->clear();
-		stream_->seekg(offset, dirToSeekDir(dir));
+		stream_.clear();
+		stream_.seekg(offset, dirToSeekDir(dir));
 		// Ensure that the EOF bit is set.
-		stream_->peek();
+		stream_.peek();
 	}
 
 	void doSkip(size_t offset) override {
-		stream_->ignore(offset);
+		stream_.ignore(offset);
 	}
 
 private:
@@ -62,7 +69,8 @@ private:
 		}
 	}
 
-	std::unique_ptr<S> stream_;
+	std::unique_ptr<S> ownedStream_;
+	S& stream_;
 };
 
 }  // namespace cpp_slippi::reading

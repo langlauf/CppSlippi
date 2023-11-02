@@ -18,7 +18,7 @@ class Action;
 // which you can find documented here:
 //     https://docs.google.com/spreadsheets/d/1Nu3hSc1U6apOhU4JIJaWRC4Lj0S1inN8BFsq3Y8cFjI/preview#gid=517965147
 class ActionState {
-	DEFINE_ENUM(ActionState, uint16_t,
+	CPP_SLIPPI_DEFINE_ENUM(ActionState, uint16_t,
 		// Only common ActionStates get names, because all other ActionStates are
 		// potentially ambiguous.
 		DEAD_DOWN = 0,
@@ -369,7 +369,7 @@ public:
 };
 
 class Action {
-	DEFINE_ENUM(Action, int16_t,
+	CPP_SLIPPI_DEFINE_ENUM(Action, int16_t,
 		UNKNOWN = -1,
 
 		// Common
@@ -2664,6 +2664,6 @@ private:
 
 
 // Indicates that a requested action does not exist for a given character.
-DEFINE_EXCEPTION(NoKnownActionStateException);
+CPP_SLIPPI_DEFINE_EXCEPTION(NoKnownActionStateException);
 
 }  // namespace cpp_slippi

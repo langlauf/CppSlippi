@@ -9,7 +9,7 @@
 namespace cpp_slippi {
 
 class Port {
-	DEFINE_ENUM(Port, int8_t,
+	CPP_SLIPPI_DEFINE_ENUM(Port, int8_t,
 		NONE = -1,
 		P1 = 0,
 		P2 = 1,

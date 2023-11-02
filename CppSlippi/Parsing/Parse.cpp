@@ -1,6 +1,7 @@
 #include "Parse.h"
 
 #include <cstdio>
+#include <cstring>
 #include <concepts>
 #include <format>
 #include <optional>
@@ -59,9 +60,9 @@ std::pair<uint32_t, std::unordered_map<EventType, uint16_t>> parseEventPayloads(
 	auto eventSize = block.read<uint8_t>(0x1);
 	result.first = eventSize + 1;
 
-	eventSize--;  // Don't count the size byte itself.
-	if (eventSize % 3 != 0) {
-		throw ParseException(std::format("Invalid event payloads size, must be divisible by 3. Was: {}", eventSize));
+	// Each event takes 3 bytes, plus the size bytes.
+	if (eventSize % 3 != 1) {
+		throw ParseException(std::format("Invalid event payloads size, must be 1 mod 3. Was: {}", eventSize));
 	}
 
 	uint8_t commandCount = eventSize/3;
@@ -102,7 +103,7 @@ uint32_t estimateNumFramesFromPayloadSizes(
 		uint32_t length,
 		const std::unordered_map<EventType, uint16_t>& payloadSizes) {
 	// Count the number of characters in the game. Ice Climbers have a follower
-	// so they could for two.
+	// so they count for two.
 	uint32_t numCharacters = 0;
 	for (const auto& maybePlayer : start.players) {
 		if (maybePlayer) {
@@ -184,30 +185,23 @@ public:
 	GeckoCodesParser(Options options, Handlers& handlers) :
 		options_(options), handlers_(handlers) {}
 
-	bool parseChunk(BlockReader& reader) {
+	void parseChunk(MessageSplitter& messageSplitter) {
 		if (!(options_.interestedEvents & Options::InterestedEvents::GECKO_CODES)) {
-			// If we're not interested in this event just return the last
-			// message field.
-			return reader.read<bool>(0x204);
+			return;
 		}
 
-		size_t size = geckoCodes_.bytes.size();
-		geckoCodes_.bytes.resize(size + 0x200);
-		reader.read(0x1, geckoCodes_.bytes.data() + size, 0x200);
-
-		uint16_t actualSize = reader.read<uint16_t>(0x201);
-		geckoCodes_.bytes.resize(size + actualSize);
-
-		if (reader.read<EventType>(0x203) != EventType::GECKO_CODES) {
+		if (messageSplitter.internalCommand != EventType::GECKO_CODES) {
 			throw ParseException("Out of order split messages are not supported.");
 		}
 
-		bool lastMessage = reader.read<bool>(0x204);
-		if (lastMessage) {
+		size_t size = geckoCodes_.bytes.size();
+		geckoCodes_.bytes.resize(size + messageSplitter.actualSize);
+		memcpy(geckoCodes_.bytes.data() + size, messageSplitter.payload.bytes, messageSplitter.actualSize);
+
+		if (messageSplitter.lastMessage) {
 			handlers_.geckoCodes(geckoCodes_);
 			geckoCodes_.bytes.resize(0);
 		}
-		return lastMessage;
 	}
 
 private:
@@ -230,6 +224,7 @@ public:
 			// which seems to be fine.
 			frameEventProcessor_(nullptr),
 			options_(options),
+			shiftJis_(options.fullwidthToHalfwidth),
 			handlers_(handlers),
 			payloadSizes_(payloadSizes),
 			numFramesFromMetadata_(numFramesFromMetadata),
@@ -366,50 +361,38 @@ private:
 	}
 
 	void parseMessageSplitter(BlockReader& reader, size_t size) {
-		bool lastMessage = std::visit([&](auto& parser) {
+		MessageSplitter splitter = {
+			.payload = reader.read<MessageSplitter::Payload>(0x1),
+			.actualSize = reader.read<uint16_t>(0x201),
+			.internalCommand = reader.read<EventType>(0x203),
+			.lastMessage = reader.read<bool>(0x204),
+		};
+
+		std::visit([&](auto& parser) {
 			using T = decltype(parser);
 			if constexpr (std::same_as<T, std::monostate&>) {
-				// If the split message parser is empty we need to construct a
-				// new parser before we can pass the chunk to it. First we need
-				// to read the entire event to get the internal command that
-				// tells us which parser to construct.
-				MessageSplitter splitter = {
-					.payload = reader.read<MessageSplitter::Payload>(0x1),
-					.actualSize = reader.read<uint16_t>(0x201),
-					.internalCommand = reader.read<EventType>(0x203),
-					.lastMessage = reader.read<bool>(0x204),
-				};
-
-				// Because we can't read back from the stream, create a new
-				// reader to read bytes out of splitter. SplitMessageParser
-				// expects the command byte to have already been read, so start at
-				// offset 0x1.
-				reading::FixedBufferReader fixedBufferReader(reinterpret_cast<char*>(&splitter), sizeof(MessageSplitter));
-				BlockReader blockReader(fixedBufferReader, 0x1);
-
-				// Construct a new parser of the appropriate type and pass the chunk
-				// with the new block reader to it.
+				// Construct a new parser of the appropriate type and pass the
+				// message splitter to it.
 				switch (splitter.internalCommand) {
 					case EventType::GECKO_CODES: {
 						splitMessageParser_.emplace<GeckoCodesParser>(options_, handlers_)
-							.parseChunk(blockReader);
+							.parseChunk(splitter);
 						break;
 					} default: {
 						throw ParseException(std::format("Message splitting not supported for event type {}.",
 							static_cast<uint8_t>(splitter.internalCommand)));
 					}
 				}
-				return splitter.lastMessage;
 			} else {
 				// The parser already exists, so just pass the chunk to it. We
 				// do not support changing the internal command in the middle of
 				// a split message stream.
-				return parser.parseChunk(reader);
+				parser.parseChunk(splitter);
 			}
 		}, splitMessageParser_);
 
 		// If that was the last message then reset the split message parser.
-		if (lastMessage) {
+		if (splitter.lastMessage) {
 			splitMessageParser_.emplace<std::monostate>();
 		}
 	}
@@ -499,8 +482,9 @@ private:
 			struct NameTag {
 				char shiftJis[16];
 			};
+			auto nameTag = reader.read<NameTag>(0x0);
 
-			start.players[i]->tag = shiftJisToUtf8(reader.read<NameTag>(0x0).shiftJis, options_.fullwidthToHalfwidth);
+			start.players[i]->tag = shiftJis_.toUtf8(std::string_view(nameTag.shiftJis, strnlen(nameTag.shiftJis, 16)));
 		});
 
 		// version < 1.5.0
@@ -538,11 +522,12 @@ private:
 			}
 
 			struct DisplayName {
-				char shiftJis[0x1F];
+				char shiftJis[0x1E];
 			};
+			auto name = reader.read<DisplayName>(0x0);
 
 			getOrCreate(start.players[i]->netplay).name =
-				shiftJisToUtf8(reader.read<DisplayName>(0x0).shiftJis, options_.fullwidthToHalfwidth);
+				shiftJis_.toUtf8(std::string_view(name.shiftJis, strnlen(name.shiftJis, 0x1E)));
 		});
 		reader.readFor(0x221, 4, 0xA, [this, &start](BlockReader& reader, size_t i) {
 			if (!start.players[i]) {
@@ -550,11 +535,12 @@ private:
 			}
 
 			struct ConnectCode {
-				char shiftJis[0xA];
+				char shiftJis[0x9];
 			};
+			auto connectCode = reader.read<ConnectCode>(0x0);
 
 			getOrCreate(start.players[i]->netplay).code =
-				shiftJisToUtf8(reader.read<ConnectCode>(0x0).shiftJis, options_.fullwidthToHalfwidth);
+				shiftJis_.toUtf8(std::string_view(connectCode.shiftJis, strnlen(connectCode.shiftJis, 0x9)));
 		});
 
 		// version < 3.11.0
@@ -568,10 +554,11 @@ private:
 			}
 
 			struct SlippiUuid {
-				char uuid[0x1D];
+				char uuid[0x1C];
 			};
+			auto slippiUuid = reader.read<SlippiUuid>(0x0);
 
-			getOrCreate(start.players[i]->netplay).slippiUid = std::string(reader.read<SlippiUuid>(0x0).uuid);
+			getOrCreate(start.players[i]->netplay).slippiUid = std::string(slippiUuid.uuid, strnlen(slippiUuid.uuid, 0x1C));
 		});
 
 		// version < 3.12.0
@@ -588,7 +575,9 @@ private:
 		struct MatchId {
 			char id[50];
 		};
-		start.matchId = reader.read<MatchId>(0x2BE).id;
+		auto matchId = reader.read<MatchId>(0x2BE);
+
+		start.matchId = std::string(matchId.id, strnlen(matchId.id, 50));
 		start.matchNumber = reader.read<uint32_t>(0x2F1);
 		start.tiebreakerNumber = reader.read<uint32_t>(0x2F5);
 		return start;
@@ -792,6 +781,7 @@ private:
 	std::unique_ptr<FrameEventProcessor> frameEventProcessor_;
 	std::variant<std::monostate, GeckoCodesParser> splitMessageParser_;
 	Options options_;
+	ShiftJisConverter shiftJis_;
 	Handlers& handlers_;
 	const std::unordered_map<EventType, uint16_t> payloadSizes_;
 	std::optional<uint32_t> numFramesFromMetadata_;

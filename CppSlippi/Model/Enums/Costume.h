@@ -17,7 +17,7 @@ class Color;
 // Definition not provided because costume colors indices are different for
 // every character.
 class Costume {
-	DEFINE_ENUM(Costume, uint8_t);
+	CPP_SLIPPI_DEFINE_ENUM(Costume, uint8_t);
 
 public:
 	// The maximum number of costumes that a single character may have.
@@ -25,7 +25,7 @@ public:
 };
 
 class Color {
-	DEFINE_ENUM(Color, int8_t,
+	CPP_SLIPPI_DEFINE_ENUM(Color, int8_t,
 		INVALID = -1,
 		RED,
 		GREEN,
@@ -115,6 +115,6 @@ private:
 
 
 // Indicates that a requested color does not exist for a given character.
-DEFINE_EXCEPTION(NoSuchColorException);
+CPP_SLIPPI_DEFINE_EXCEPTION(NoSuchColorException);
 
 }  // namespace cpp_slippi

@@ -5,6 +5,6 @@
 
 namespace cpp_slippi::parsing {
 
-DEFINE_EXCEPTION(ParseException);
+CPP_SLIPPI_DEFINE_EXCEPTION(ParseException);
 
 }  // namespace cpp_slippi::reading

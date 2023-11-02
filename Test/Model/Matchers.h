@@ -1,6 +1,10 @@
 #pragma once
 
+#include <functional>
 #include <iostream>
+#include <string>
+#include <tuple>
+#include <type_traits>
 
 #include <gmock/gmock-matchers.h>
 
@@ -45,7 +49,7 @@ MATCHER_P2(MatchOptional, matcher, expected,
 		return false;
 	} else {
 		testing::StringMatchResultListener value_listener;
-		bool match = ExplainMatchResult(matcher, std::make_tuple(*arg, *expected), &value_listener);
+		bool match = ExplainMatchResult(matcher, std::make_tuple(std::cref(*arg), std::cref(*expected)), &value_listener);
 		*result_listener
 			<< "whose value " << testing::PrintToString(*arg)
 			<< (match ? " matches" : " doesn't match");
@@ -56,12 +60,12 @@ MATCHER_P2(MatchOptional, matcher, expected,
 	}
 }
 
-#define MAKE_POINTWISE(name, pointwiseName, description)                 \
+#define MAKE_POINTWISE(name, pointwiseName, description)                     \
     MATCHER(pointwiseName, "are a pair that " + std::string(description)) {  \
-        return ExplainMatchResult(                                       \
-            name(std::get<0>(arg)),	                                     \
-            std::get<1>(arg),	                                         \
-            result_listener);                                            \
+        return ExplainMatchResult(                                           \
+            name(std::get<0>(arg)),                                          \
+            std::get<1>(arg),                                                \
+            result_listener);                                                \
     }
 
 #define MAKE_POINTWISE2(name, pointwiseName, description)                           \

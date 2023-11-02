@@ -10,7 +10,7 @@
 namespace cpp_slippi {
 
 class ItemType {
-	DEFINE_ENUM(ItemType, uint16_t,
+	CPP_SLIPPI_DEFINE_ENUM(ItemType, uint16_t,
 		CAPSULE = 0,
 		BOX = 1,
 		BARREL = 2,
@@ -690,7 +690,7 @@ public:
 // Bitfield for items that can spawn during gameplay and can be toggled in the
 // options. See https://github.com/project-slippi/slippi-wiki/blob/master/SPEC.md#item-spawn-bitfield-1
 class ItemSpawns {
-	DEFINE_ENUM(ItemSpawns, uint64_t,
+	CPP_SLIPPI_DEFINE_ENUM(ItemSpawns, uint64_t,
 		METAL_BOX = 1llu << 0,
 		CLOAKING_DEVICE = 1llu << 1,
 		POKEBALL = 1llu << 3,

@@ -86,7 +86,7 @@ Two exception types are thrown by this library.
 * `ParseException`: Thrown when there is a problem parsing a .slp file.
 * `ReadException`: Thrown when a file cannot be read.
 
-In additiona, `std` exceptions may be thrown in some cases.
+In addition, `std` exceptions may be thrown in some cases.
 
 ### Versions
 

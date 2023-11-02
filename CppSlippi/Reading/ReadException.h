@@ -5,6 +5,6 @@
 
 namespace cpp_slippi::reading {
 
-DEFINE_EXCEPTION(ReadException);
+CPP_SLIPPI_DEFINE_EXCEPTION(ReadException);
 
 }  // namespace cpp_slippi::reading

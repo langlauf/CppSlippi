@@ -3,7 +3,9 @@
 #include <concepts>
 
 
-#define ENUM_COMMON(Name, Type, ...)                                  \
+namespace cpp_slippi::utils {
+
+#define CPP_SLIPPI_ENUM_COMMON(Name, Type, ...)                       \
     public:                                                           \
         enum Enum : Type { __VA_ARGS__ };                             \
                                                                       \
@@ -34,8 +36,8 @@
 // class Color {
 //      DEFINE_ENUM(Color, uint8_t, RED, GREEN, BLUE);
 // };
-#define DEFINE_ENUM(Name, Type, ...)                        \
-    ENUM_COMMON(Name, Type, __VA_ARGS__)                    \
+#define CPP_SLIPPI_DEFINE_ENUM(Name, Type, ...)             \
+    CPP_SLIPPI_ENUM_COMMON(Name, Type, __VA_ARGS__)         \
                                                             \
     public:                                                 \
         /* Needed to prevent if(c). */                      \
@@ -45,8 +47,8 @@
 
 // Similar to the above, except it also supports bit operations and bool
 // conversion.
-#define DEFINE_BITFLAG_ENUM(Name, Type, ...)                       \
-    ENUM_COMMON(Name, Type, __VA_ARGS__);                          \
+#define CPP_SLIPPI_DEFINE_BITFLAG_ENUM(Name, Type, ...)            \
+    CPP_SLIPPI_ENUM_COMMON(Name, Type, __VA_ARGS__);               \
                                                                    \
     public:                                                        \
         constexpr Name& operator&=(Enum rhs) {                     \
@@ -82,3 +84,5 @@
 
 template<typename T>
 concept special_enum = std::is_enum_v<typename T::Enum>;
+
+}  // namespace cpp_slippi::utils

@@ -9,7 +9,7 @@
 namespace cpp_slippi {
 
 class Attack {
-	DEFINE_ENUM(Attack, uint8_t,
+	CPP_SLIPPI_DEFINE_ENUM(Attack, uint8_t,
 		NON_STALING = 1,
 		JAB_1 = 2,
 		JAB_2 = 3,

@@ -12,7 +12,7 @@ struct Options {
 	};
 
 	class InterestedEvents {
-		DEFINE_BITFLAG_ENUM(InterestedEvents, uint16_t,
+		CPP_SLIPPI_DEFINE_BITFLAG_ENUM(InterestedEvents, uint16_t,
 			NONE = 0x0,
 			GAME_START = 0x1,
 			FRAME_START = 0x2,

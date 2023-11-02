@@ -6,34 +6,38 @@
 namespace cpp_slippi::parsing {
 
 TEST(ShiftJisTest, TestAscii) {
-	EXPECT_EQ(shiftJisToUtf8("Hello, world", false), "Hello, world");
+	ShiftJisConverter shiftJis(false);
+	EXPECT_EQ(shiftJis.toUtf8("Hello, world"), "Hello, world");
 }
 
 TEST(ShiftJisTest, TestKana) {
-	EXPECT_EQ(shiftJisToUtf8("\x82\xA0\x82\xA2\x82\xA4", false), "あいう");
+	ShiftJisConverter shiftJis(false);
+	EXPECT_EQ(shiftJis.toUtf8("\x82\xA0\x82\xA2\x82\xA4"), "あいう");
 }
 
 TEST(ShiftJisTest, TestKanji) {
-	EXPECT_EQ(shiftJisToUtf8("\x8A\x64\xE9\xD5\xE4\x82", false), "嚇鰈艪");
+	ShiftJisConverter shiftJis(false);
+	EXPECT_EQ(shiftJis.toUtf8("\x8A\x64\xE9\xD5\xE4\x82"), "嚇鰈艪");
 }
 
 TEST(ShiftJisTest, TestMixed) {
-	EXPECT_EQ(shiftJisToUtf8("Hello, \x8A\x64\xE9\xD5\xE4\x82! 4\x82\xA0.", false), "Hello, 嚇鰈艪! 4あ.");
+	ShiftJisConverter shiftJis(false);
+	EXPECT_EQ(shiftJis.toUtf8("Hello, \x8A\x64\xE9\xD5\xE4\x82! 4\x82\xA0."), "Hello, 嚇鰈艪! 4あ.");
 }
 
 TEST(ShiftJisTest, TextFullwidthAscii) {
+	ShiftJisConverter shiftJis(false);
 	EXPECT_EQ(
-		shiftJisToUtf8(
-			"\x82\x67\x82\x85\x82\x8C\x82\x8C\x82\x8F\x81\x43\x81\x40\x82\x76\x82\x8F\x82\x92\x82\x8C\x82\x84\x81\x49",
-			false),
+		shiftJis.toUtf8(
+			"\x82\x67\x82\x85\x82\x8C\x82\x8C\x82\x8F\x81\x43\x81\x40\x82\x76\x82\x8F\x82\x92\x82\x8C\x82\x84\x81\x49"),
 		"Ｈｅｌｌｏ，　Ｗｏｒｌｄ！");
 }
 
 TEST(ShiftJisTest, TextFullwidthAsciiToHalfwidth) {
+	ShiftJisConverter shiftJis(true);
 	EXPECT_EQ(
-		shiftJisToUtf8(
-			"\x82\x67\x82\x85\x82\x8C\x82\x8C\x82\x8F\x81\x43\x81\x40\x82\x76\x82\x8F\x82\x92\x82\x8C\x82\x84\x81\x49",
-			true),
+		shiftJis.toUtf8(
+			"\x82\x67\x82\x85\x82\x8C\x82\x8C\x82\x8F\x81\x43\x81\x40\x82\x76\x82\x8F\x82\x92\x82\x8C\x82\x84\x81\x49"),
 		"Hello, World!");
 }
 
