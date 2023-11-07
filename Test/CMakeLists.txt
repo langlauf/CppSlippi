@@ -11,13 +11,13 @@ add_executable(${This}
 	CppSlippiTest.cpp
 	Model/Enums/ActionStateTest.cpp
 	Model/Enums/CostumeTest.cpp
-	Model/Matchers.cpp
-	Model/Matchers.h
+	Model/PrintTo.cpp
 	Parsing/BlockReaderTest.cpp
 	Parsing/FrameEventProcessorTest.cpp
 	Parsing/ShiftJisTest.cpp
 	Reading/ReaderTest.cpp
-	Utils/EndianTest.cpp)
+	Utils/EndianTest.cpp
+	Utils/PortArrayTest.cpp)
 
 target_include_directories(${This} PRIVATE .)
 

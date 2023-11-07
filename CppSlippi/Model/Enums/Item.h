@@ -3,8 +3,9 @@
 #include <cstdint>
 #include <string_view>
 
-#include "CppSlippi/Utils/Enums.h"
 #include "CppSlippi/Utils/BitFields.h"
+#include "CppSlippi/Utils/Endian.h"
+#include "CppSlippi/Utils/Enums.h"
 
 
 namespace cpp_slippi {
@@ -691,6 +692,8 @@ public:
 // options. See https://github.com/project-slippi/slippi-wiki/blob/master/SPEC.md#item-spawn-bitfield-1
 class ItemSpawns {
 	CPP_SLIPPI_DEFINE_ENUM(ItemSpawns, uint64_t,
+		NONE = 0llu,
+
 		METAL_BOX = 1llu << 0,
 		CLOAKING_DEVICE = 1llu << 1,
 		POKEBALL = 1llu << 3,
@@ -732,6 +735,8 @@ class ItemSpawns {
 public:
 	constexpr std::string_view toString() const {
 		switch (value) {
+			case NONE:
+				return "None";
 			case METAL_BOX:
 				return "MetalBox";
 			case CLOAKING_DEVICE:
@@ -803,11 +808,12 @@ public:
 			case MR_SATURN:
 				return "MrSaturn";
 			default:
-				return "Unknown";
+				return "Unknown or Multiple Items";
 		}
 	}
 };
 template<> constexpr bool is_bitfield<ItemSpawns::Enum> = true;
+template<> constexpr std::endian kEndian<ItemSpawns::Enum> = std::endian::little;
 
 
 }  // namespace cpp_slippi

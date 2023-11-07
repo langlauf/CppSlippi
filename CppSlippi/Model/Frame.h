@@ -1,6 +1,6 @@
 #pragma once
 
-#include <array>
+#include <bit>
 #include <cstdint>
 #include <optional>
 #include <vector>
@@ -13,12 +13,15 @@
 #include "CppSlippi/Model/Item.h"
 #include "CppSlippi/Model/Triggers.h"
 #include "CppSlippi/Model/Primitives.h"
+#include "CppSlippi/Utils/Endian.h"
+#include "CppSlippi/Utils/PortArray.h"
 
 
 namespace cpp_slippi {
 
 // See https://github.com/project-slippi/slippi-wiki/blob/master/SPEC.md#state-bit-flags-1
 enum class StateFlags : uint64_t {
+	NONE = 0llu,
 	REFLECT = 1llu << 4,
 	UNTOUCHABLE = 1llu << 10,
 	FAST_FALL = 1llu << 11,
@@ -33,6 +36,7 @@ enum class StateFlags : uint64_t {
 	OFF_SCREEN = 1llu << 39,
 };
 template<> constexpr bool is_bitfield<StateFlags> = true;
+template<> constexpr std::endian kEndian<StateFlags> = std::endian::little;
 
 
 enum class LCancel : uint8_t {
@@ -148,15 +152,15 @@ struct Post {
 	// shield behaves as an absorber. If a reflector is used and the reflected
 	// projectile hits the enemy, the ID of the projectile is used and not the
 	// ID of the reflector. This field corresponds to move staling. Any attack
-	// with ID 1 does not participate in staling. This field is set back to 0 on
-	// death
-	Attack lastAttackLanded;
+	// with ID 1 does not participate in staling. This field is set back to
+	// nullopt on death
+	std::optional<Attack> lastAttackLanded;
 
 	// Combo count as defined by the game
 	uint8_t comboCount;
 
 	// The player that last hit this player
-	std::optional<uint8_t> lastHitBy;
+	std::optional<Port> lastHitBy;
 
 	// Number of stocks remaining
 	uint8_t stocks;
@@ -267,7 +271,7 @@ struct Frame {
 
 	// Frame data for each port (port 1 is at index 0; empty ports will contain
 	// std::nullopt)
-	std::array<std::optional<Player>, 4> ports;
+	utils::PortArray<std::optional<Player>> ports;
 
 	// added(3.0.0) Active items(includes projectiles)
 	std::vector<Item> items;

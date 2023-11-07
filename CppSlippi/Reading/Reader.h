@@ -1,61 +1,18 @@
 #pragma once
 
-#include <bit>
+#include <algorithm>
 #include <concepts>
 #include <cstdint>
 #include <format>
 #include <iterator>
 #include <ranges>
 
-#include "CppSlippi/Reading/Endian.h"
 #include "CppSlippi/Reading/ReadException.h"
 #include "CppSlippi/Utils/Defines.h"
+#include "CppSlippi/Utils/Endian.h"
 
 
 namespace cpp_slippi::reading {
-namespace details {
-
-// The creator of UBJSON must be a sadist, because it uses big-endian. So we
-// have to swap the byte order.
-template<typename T>
-constexpr T toNativeEndian(T t) {
-	if constexpr (std::endian::native == kEndian<T>) {
-		return t;
-	} else {
-		// I'd prefer for stylistic reasons not to use an else block here, but
-		// MSVC complains about unreachable code if I don't.
-#ifdef _MSC_VER
-		// MSVC optimizations are not as good, so use intrinsics.
-		if constexpr (sizeof(T) == sizeof(uint8_t)) {
-			return t;
-		} else if constexpr (sizeof(T) == sizeof(uint16_t)) {
-			uint16_t n = _byteswap_ushort(reinterpret_cast<uint16_t&>(t));
-			return reinterpret_cast<T&>(n);
-		} else if constexpr (sizeof(T) == sizeof(uint32_t)) {
-			uint32_t n = _byteswap_ulong(reinterpret_cast<uint32_t&>(t));
-			return reinterpret_cast<T&>(n);
-		} else if constexpr (sizeof(T) == sizeof(uint64_t)) {
-			uint64_t n = _byteswap_uint64(reinterpret_cast<uint64_t&>(t));
-			return reinterpret_cast<T&>(n);
-		} else {
-#endif
-			union {
-				T t;
-				unsigned char bytes[sizeof(T)];
-			} source, dest;
-
-			source.t = t;
-
-			std::ranges::copy(std::ranges::reverse_view(source.bytes), dest.bytes);
-			return dest.t;
-#ifdef _MSC_VER
-		}
-#endif
-	}
-}
-
-}  // namespace details
-
 
 class CPP_SLIPPI_API Reader {
 protected:
@@ -109,7 +66,7 @@ public:
 		u.t = {};
 
 		read(u.bytes, N);
-		return details::toNativeEndian(u.t);
+		return toNativeEndian(u.t);
 	}
 
 	template<typename T>

@@ -1,5 +1,6 @@
 #include "Parse.h"
 
+#include <array>
 #include <cstdio>
 #include <cstring>
 #include <concepts>
@@ -17,6 +18,7 @@
 #include "CppSlippi/Parsing/ShiftJis.h"
 #include "CppSlippi/Parsing/Utils.h"
 #include "CppSlippi/Reading/FixedBufferReader.h"
+#include "CppSlippi/Utils/PortArray.h"
 
 
 using cpp_slippi::reading::Reader;
@@ -41,9 +43,7 @@ enum class EventType : uint8_t {
 
 
 struct MessageSplitter {
-	struct Payload {
-		uint8_t bytes[0x200];
-	};
+	using Payload = std::array<uint8_t, 0x200>;
 
 	Payload payload;
 	uint16_t actualSize;
@@ -159,7 +159,7 @@ Metadata  parseMetadata(const nlohmann::json& rawMetadata) {
 		const nlohmann::json& playersJson = rawMetadata.at("players");
 		auto& players = metadata.players.emplace();
 		for (const auto& [key, rawPlayer] : playersJson.items()) {
-			size_t port = std::stoi(key);
+			Port port = static_cast<Port>(std::stoi(key));
 			Metadata::Player& player = players[port].emplace();
 
 			if (rawPlayer.contains("characters")) {
@@ -196,7 +196,7 @@ public:
 
 		size_t size = geckoCodes_.bytes.size();
 		geckoCodes_.bytes.resize(size + messageSplitter.actualSize);
-		memcpy(geckoCodes_.bytes.data() + size, messageSplitter.payload.bytes, messageSplitter.actualSize);
+		memcpy(geckoCodes_.bytes.data() + size, messageSplitter.payload.data(), messageSplitter.actualSize);
 
 		if (messageSplitter.lastMessage) {
 			handlers_.geckoCodes(geckoCodes_);
@@ -417,14 +417,16 @@ private:
 			// There are actually 6 blocks for player data, but only the first four
 			// are used.
 			reader.readFor(0x60, 4, 0x24, [&start](BlockReader& reader, size_t i) {
+				Port port = static_cast<Port>(i);
+
 				auto character = reader.read<CssCharacter>(0x0);
 				auto type = reader.read<Player::Type>(0x1);
 				if (type == Player::Type::EMPTY) {
-					start.players[i] = std::nullopt;
+					start.players[port] = std::nullopt;
 					return;
 				}
 
-				Player& player = start.players[i].emplace();
+				Player& player = start.players[port].emplace();
 				player.character = character;
 				player.type = type;
 				player.stocks = reader.read<uint8_t>(0x2);
@@ -459,11 +461,13 @@ private:
 		}
 
 		reader.readFor(0x141, 4, 0x8, [&start](BlockReader& reader, size_t i) {
-			if (!start.players[i]) {
+			Port port = static_cast<Port>(i);
+
+			if (!start.players[port]) {
 				return;
 			}
 
-			start.players[i]->ucf = {
+			start.players[port]->ucf = {
 				.dashBack = reader.read<Ucf::DashBack>(0x0),
 				.shieldDrop = reader.read<Ucf::ShieldDrop>(0x4),
 			};
@@ -475,16 +479,14 @@ private:
 		}
 
 		reader.readFor(0x161, 4, 0x10, [this, &start](BlockReader& reader, size_t i) {
-			if (!start.players[i]) {
+			Port port = static_cast<Port>(i);
+
+			if (!start.players[port]) {
 				return;
 			}
 
-			struct NameTag {
-				char shiftJis[16];
-			};
-			auto nameTag = reader.read<NameTag>(0x0);
-
-			start.players[i]->tag = shiftJis_.toUtf8(std::string_view(nameTag.shiftJis, strnlen(nameTag.shiftJis, 16)));
+			auto nameTag = reader.read<std::array<char, 0x10>>(0x0);
+			start.players[port]->tag = shiftJis_.toUtf8(std::string_view(nameTag.data(), strnlen(nameTag.data(), nameTag.size())));
 		});
 
 		// version < 1.5.0
@@ -517,30 +519,26 @@ private:
 		}
 
 		reader.readFor(0x1A5, 4, 0x1F, [this, &start](BlockReader& reader, size_t i) {
-			if (!start.players[i]) {
+			Port port = static_cast<Port>(i);
+
+			if (!start.players[port]) {
 				return;
 			}
 
-			struct DisplayName {
-				char shiftJis[0x1E];
-			};
-			auto name = reader.read<DisplayName>(0x0);
-
-			getOrCreate(start.players[i]->netplay).name =
-				shiftJis_.toUtf8(std::string_view(name.shiftJis, strnlen(name.shiftJis, 0x1E)));
+			auto name = reader.read<std::array<char, 0x1E>>(0x0);
+			getOrCreate(start.players[port]->netplay).name =
+				shiftJis_.toUtf8(std::string_view(name.data(), strnlen(name.data(), name.size())));
 		});
 		reader.readFor(0x221, 4, 0xA, [this, &start](BlockReader& reader, size_t i) {
-			if (!start.players[i]) {
+			Port port = static_cast<Port>(i);
+
+			if (!start.players[port]) {
 				return;
 			}
 
-			struct ConnectCode {
-				char shiftJis[0x9];
-			};
-			auto connectCode = reader.read<ConnectCode>(0x0);
-
-			getOrCreate(start.players[i]->netplay).code =
-				shiftJis_.toUtf8(std::string_view(connectCode.shiftJis, strnlen(connectCode.shiftJis, 0x9)));
+			auto connectCode = reader.read<std::array<char, 0x9>>(0x0);
+			getOrCreate(start.players[port]->netplay).code =
+				shiftJis_.toUtf8(std::string_view(connectCode.data(), strnlen(connectCode.data(), connectCode.size())));
 		});
 
 		// version < 3.11.0
@@ -549,16 +547,14 @@ private:
 		}
 
 		reader.readFor(0x249, 4, 0x1D, [&start](BlockReader& reader, size_t i) {
-			if (!start.players[i]) {
+			Port port = static_cast<Port>(i);
+
+			if (!start.players[port]) {
 				return;
 			}
 
-			struct SlippiUuid {
-				char uuid[0x1C];
-			};
-			auto slippiUuid = reader.read<SlippiUuid>(0x0);
-
-			getOrCreate(start.players[i]->netplay).slippiUid = std::string(slippiUuid.uuid, strnlen(slippiUuid.uuid, 0x1C));
+			auto slippiUid = reader.read<std::array<char, 0x1C>>(0x0);
+			getOrCreate(start.players[port]->netplay).slippiUid = std::string(slippiUid.data(), strnlen(slippiUid.data(), slippiUid.size()));
 		});
 
 		// version < 3.12.0
@@ -572,12 +568,8 @@ private:
 			return start;
 		}
 
-		struct MatchId {
-			char id[50];
-		};
-		auto matchId = reader.read<MatchId>(0x2BE);
-
-		start.matchId = std::string(matchId.id, strnlen(matchId.id, 50));
+		auto matchId = reader.read<std::array<char, 50>>(0x2BE);
+		start.matchId = std::string(matchId.data(), strnlen(matchId.data(), matchId.size()));
 		start.matchNumber = reader.read<uint32_t>(0x2F1);
 		start.tiebreakerNumber = reader.read<uint32_t>(0x2F5);
 		return start;
@@ -597,9 +589,10 @@ private:
 		if (size <= 0x3) {
 			return end;
 		}
-		end.playerPlacements = std::array<int8_t, 4>{};
+		end.playerPlacements = utils::PortArray<int8_t>{};
 		reader.readFor(0x3, 4, 1, [&end](BlockReader& reader, size_t i) {
-			end.playerPlacements->at(i) = reader.read<Port>(0x0);
+			Port port = static_cast<Port>(i);
+			end.playerPlacements->at(port) = reader.read<Port>(0x0);
 		});
 		return end;
 	}
@@ -675,9 +668,13 @@ private:
 		post.direction = reader.read<float>(0x12);
 		post.damage = reader.read<float>(0x16);
 		post.shield = reader.read<float>(0x1A);
-		post.lastAttackLanded = reader.read<Attack>(0x1E);
+
+		Attack lastAttackLanded = reader.read<Attack>(0x1E);
+		post.lastAttackLanded = lastAttackLanded != 0 ? std::optional(lastAttackLanded) : std::nullopt;
 		post.comboCount = reader.read<uint8_t>(0x1F);
-		post.lastHitBy = reader.read<Attack>(0x20);
+
+		Port lastHitBy = reader.read<Port>(0x20);
+		post.lastHitBy = lastHitBy <= Port::P4 ? std::optional(lastHitBy) : std::nullopt;
 		post.stocks = reader.read<uint8_t>(0x21);
 
 		// version < 1.2.0

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <array>
+#include <bit>
 #include <cstdint>
 #include <optional>
 #include <memory>
@@ -16,6 +16,8 @@
 #include "CppSlippi/Model/Player.h"
 #include "CppSlippi/Model/Metadata.h"
 #include "CppSlippi/Utils/BitFields.h"
+#include "CppSlippi/Utils/Endian.h"
+#include "CppSlippi/Utils/PortArray.h"
 
 
 namespace cpp_slippi {
@@ -23,6 +25,8 @@ namespace cpp_slippi {
 // Information about the Slippi recorder that generated this replay.
 struct Slippi {
 	struct Version {
+		static constexpr std::endian kEndian = std::endian::little;
+
 		uint8_t major;
 		uint8_t minor;
 		uint8_t build;
@@ -102,6 +106,7 @@ struct Game {
 		MODE_COIN = 0x40,
 		MODE_BONUS = 0x60,
 
+		NONE = 0u,
 		FRIENDLY_FIRE = 1u << 8,
 		BTT_OR_TITLE_SCREEN_DEMO = 1u << 9,
 		CLASSIC_OR_ADVENTURE_MODE = 1u << 10,
@@ -167,7 +172,7 @@ struct Game {
 
 		// Players in this game by port (port 1 is at index 0; empty ports will
 		// contain std::nullopt)
-		std::array<std::optional<Player>, 4> players;
+		utils::PortArray<std::optional<Player>> players;
 
 		// The random seed before the game start
 		uint32_t randomSeed;
@@ -220,7 +225,7 @@ struct Game {
 		// added(2.0.0) Index of player that LRAS'd, if any
 		std::optional<Port> lrasInitiator;
 		// added(3.13.0) 0-indexed placement positions. -1 if player not in game
-		std::optional<std::array<int8_t, 4>> playerPlacements;
+		std::optional<utils::PortArray<int8_t>> playerPlacements;
 	};
 
 	std::optional<Start> start;
@@ -230,6 +235,8 @@ struct Game {
 	std::optional<nlohmann::json> rawMetadata;
 	std::optional<GeckoCodes> geckoCodes;
 };
+
 template<> constexpr bool is_bitfield<Game::Bitfield> = true;
+template<> constexpr std::endian kEndian<Game::Bitfield> = std::endian::little;
 
 }  // namespace cpp_slippi

@@ -1,12 +1,12 @@
 #pragma once
 
-#include <array>
 #include <cstdint>
 #include <optional>
 #include <string>
 #include <unordered_map>
 
 #include "CppSlippi/Model/Enums/Character.h"
+#include "CppSlippi/Utils/PortArray.h"
 
 
 namespace cpp_slippi {
@@ -44,7 +44,7 @@ struct Metadata {
 	std::optional<int32_t> lastFrame;
 
 	// Metadata for the individual players.
-	std::optional<std::array<std::optional<Player>, 4>> players;
+	std::optional<utils::PortArray<std::optional<Player>>> players;
 
 	// Platform the game was played on (values include dolphin, console, and network)
 	std::optional<std::string> playedOn;

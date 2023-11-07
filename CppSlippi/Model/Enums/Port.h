@@ -17,6 +17,10 @@ class Port {
 		P4 = 3);
 
 public:
+	static constexpr std::array<Port, 4> values() {
+		return {P1, P2, P3, P4};
+	}
+
 	constexpr std::string_view toString() const {
 		switch (value) {
 			case P1:

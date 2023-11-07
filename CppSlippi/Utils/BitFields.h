@@ -36,4 +36,4 @@ constexpr T operator~(T a) {
 	return static_cast<T>(~underlying(a));
 }
 
-}  // namespace cpp_slippi::utils
+}  // namespace cpp_slippi

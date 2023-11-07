@@ -156,6 +156,54 @@ TEST(CppSlippi, BasicGame) {
 	EXPECT_THAT(game.metadata, Optional(MetadataEq(expectedMetadata)));
 }
 
+
+TEST(CppSlippi, BasicFrame) {
+	Game game = parseGame("game.slp");
+
+	Pre expectedPre {
+		.frameNumber = -123,
+		.port = Port::P1,
+		.isFollower = false,
+		.randomSeed = 3849336064u,
+		.state = ActionState::ENTRY,
+		.position = {-42.0f, 26.6f},
+		.direction = Direction::RIGHT,
+		.joystick = {0.0f, 0.0f},
+		.cstick = {0.0f, 0.0f},
+		.triggers = {
+			.logical = 0.0f,
+			.physical {
+				.left = 0.0f,
+				.right = 37793343381764747296768.0f,
+			},
+		},
+		.buttons = {
+			.logical = Buttons::Logical::NONE,
+			.physical = Buttons::Physical::NONE,
+		},
+	};
+
+	Post expectedPost {
+		.frameNumber = -123,
+		.port = Port::P1,
+		.isFollower = false,
+		.character = InGameCharacter::MARTH,
+		.state = ActionState::ENTRY,
+		.position = {-42.0f, 26.6f},
+		.direction = Direction::RIGHT,
+		.damage = 0.0f,
+		.shield = 60.0,
+		.lastAttackLanded = std::nullopt,
+		.comboCount = 0,
+		.lastHitBy = std::nullopt,
+		.stocks = 4,
+		.stateAge = -1.0f,
+	};
+
+	EXPECT_THAT(game.frames[0].ports[Port::P1]->leader.pre, Optional(PreEq(expectedPre)));
+	EXPECT_THAT(game.frames[0].ports[Port::P1]->leader.post, Optional(PostEq(expectedPost)));
+}
+
 TEST(CppSlippi, StreamingGame) {
 	Game game = parseGame("streaming_game.slp");
 
@@ -258,7 +306,7 @@ TEST(CppSlippi, IceClimbers) {
 	};
 
 	ASSERT_TRUE(game.metadata->players.has_value());
-	EXPECT_THAT(game.metadata->players->at(0), Optional(MetadataPlayerEq(expected)));
+	EXPECT_THAT(game.metadata->players->at(Port::P1), Optional(MetadataPlayerEq(expected)));
 
 	ASSERT_TRUE(game.start->players[Port::P1].has_value());
 	EXPECT_THAT(game.start->players[Port::P1]->character, CssCharacter::ICE_CLIMBERS);
@@ -376,11 +424,11 @@ TEST(CppSlippi, Names) {
 
 	ASSERT_TRUE(game.metadata->players.has_value());
 
-	ASSERT_TRUE(game.metadata->players->at(0).has_value());
-	EXPECT_EQ(game.metadata->players->at(0)->names, p1Names);
+	ASSERT_TRUE(game.metadata->players->at(Port::P1).has_value());
+	EXPECT_EQ(game.metadata->players->at(Port::P1)->names, p1Names);
 
-	ASSERT_TRUE(game.metadata->players->at(1).has_value());
-	EXPECT_EQ(game.metadata->players->at(1)->names, p2Names);
+	ASSERT_TRUE(game.metadata->players->at(Port::P2).has_value());
+	EXPECT_EQ(game.metadata->players->at(Port::P2)->names, p2Names);
 }
 
 TEST(CppSlippi, ConsoleName) {
@@ -603,8 +651,8 @@ TEST(CppSlippi, SkipUninterestedEvents) {
 	EXPECT_THAT(game.metadata, Eq(std::nullopt));
 
 	ASSERT_THAT(game.frames, SizeIs(7375));
-	EXPECT_THAT(game.frames[121].ports[0]->leader.pre, Not(Eq(std::nullopt)));
-	EXPECT_THAT(game.frames[121].ports[0]->leader.post, Eq(std::nullopt));
+	EXPECT_THAT(game.frames[121].ports[Port::P1]->leader.pre, Not(Eq(std::nullopt)));
+	EXPECT_THAT(game.frames[121].ports[Port::P1]->leader.post, Eq(std::nullopt));
 	// This frame would normally have an item.
 	EXPECT_THAT(game.frames[121].items, IsEmpty());
 }

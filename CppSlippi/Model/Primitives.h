@@ -21,4 +21,10 @@ struct Velocity {
 	friend constexpr bool operator==(const Velocity&, const Velocity&) = default;
 };
 
+
+struct Direction {
+	static constexpr float LEFT = -1.0f;
+	static constexpr float RIGHT = 1.0f;
+};
+
 }  // namespace cpp_slippi
