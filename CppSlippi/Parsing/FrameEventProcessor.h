@@ -1,7 +1,7 @@
 #pragma once
 
-#include <optional>
 #include <memory>
+#include <optional>
 
 #include "CppSlippi/Handlers.h"
 #include "CppSlippi/Model.h"
@@ -16,6 +16,8 @@ class FrameEventProcessor {
 public:
 	static std::unique_ptr<FrameEventProcessor> create(
 		Options::Rollback rollback, Handlers& handlers, std::optional<uint32_t> hintNumFrames);
+
+	virtual ~FrameEventProcessor() = default;
 
 	virtual void processStart(Frame::Start&) = 0;
 	virtual void processPre(Pre&) = 0;

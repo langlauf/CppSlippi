@@ -1,5 +1,9 @@
 #include "CppSlippi/Utils/Endian.h"
 
+#include <array>
+#include <bit>
+#include <cstdint>
+
 #include "CppSlippi/Model.h"
 
 
@@ -20,14 +24,19 @@ static_assert(kEndian<double> == std::endian::big);
 static_assert(kEndian<std::array<char, 10>> == std::endian::little);
 static_assert(kEndian<std::array<uint8_t, 10>> == std::endian::little);
 
+template<typename T>
+concept readable = requires(std::endian e) {
+	kEndian<T> == e;
+};
+
 // Structs.
 struct TestUnreadable {};
 struct TestReadable {
 	static constexpr std::endian kEndian = std::endian::little;
 };
 
-static_assert(!details::allow_read<TestUnreadable>);
-static_assert(details::allow_read<TestReadable>);
+static_assert(!readable<TestUnreadable>);
+static_assert(readable<TestReadable>);
 static_assert(kEndian<TestReadable> == std::endian::little);
 static_assert(kEndian<Slippi::Version> == std::endian::little);
 
@@ -36,6 +45,5 @@ static_assert(kEndian<ItemType> == std::endian::big);
 static_assert(kEndian<Game::Bitfield> == std::endian::little);
 static_assert(kEndian<StateFlags> == std::endian::little);
 static_assert(kEndian<ItemSpawns> == std::endian::little);
-
 
 }  // namespace cpp_slippi

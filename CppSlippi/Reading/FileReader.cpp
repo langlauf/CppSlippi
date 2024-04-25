@@ -1,5 +1,9 @@
 #include "FileReader.h"
 
+#include <cstddef>
+#include <cstdio>
+#include <format>
+
 #include "CppSlippi/Reading/ReadException.h"
 
 

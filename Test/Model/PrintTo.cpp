@@ -2,6 +2,8 @@
 
 #include <ostream>
 
+#include "CppSlippi/Model.h"
+
 
 namespace cpp_slippi {
 

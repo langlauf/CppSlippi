@@ -1,8 +1,9 @@
 #pragma once
 
+#include <exception>
+#include <source_location>
 #include <string>
 #include <string_view>
-#include <source_location>
 
 #include "CppSlippi/Utils/Defines.h"
 
@@ -14,7 +15,7 @@ class CPP_SLIPPI_API BaseException : public std::exception {
 public:
 	explicit BaseException(std::string_view msg, std::source_location loc);
 
-	const char* what() const final {
+	const char* what() const noexcept final {
 		return what_.c_str();
 	}
 

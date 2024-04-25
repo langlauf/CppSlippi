@@ -812,8 +812,8 @@ public:
 		}
 	}
 };
-template<> constexpr bool is_bitfield<ItemSpawns::Enum> = true;
-template<> constexpr std::endian kEndian<ItemSpawns::Enum> = std::endian::little;
+template<> inline constexpr bool is_bitfield<ItemSpawns::Enum> = true;
+template<> inline constexpr std::endian kEndian<ItemSpawns::Enum> = std::endian::little;
 
 
 }  // namespace cpp_slippi

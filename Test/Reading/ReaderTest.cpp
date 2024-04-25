@@ -1,14 +1,18 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "CppSlippi/Reading/Reader.h"
 
 #include <concepts>
+#include <cstddef>
+#include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <filesystem>
 #include <format>
 #include <fstream>
-#include <memory>
 #include <string>
 #include <string_view>
+#include <type_traits>
 
 #include <gtest/gtest.h>
 
@@ -84,9 +88,8 @@ public:
 
 private:
 	static FILE* open(std::filesystem::path path) {
-		FILE* file;
-		errno_t err = fopen_s(&file, path.string().c_str(), "rb");
-		if (err) {
+		FILE* file = fopen(path.string().c_str(), "rb");
+		if (!file) {
 			throw TestSetupException(std::format("Could not open file {}.", path.string()));
 		}
 		return file;
@@ -187,49 +190,49 @@ TYPED_TEST(ReaderTest, Read_BufferEnds_ShouldThrow) {
 	auto& reader = this->getReader();
 
 	reader.seek(kFileEnd - 2, SEEK_SET);
-	EXPECT_THROW(reader.read<uint32_t>(), ReadException);
+	EXPECT_THROW(reader.template read<uint32_t>(), ReadException);
 }
 
 TYPED_TEST(ReaderTest, Read_Byte) {
 	auto& reader = this->getReader();
 
 	reader.seek(kIntStart, SEEK_SET);
-	EXPECT_EQ(reader.read<uint8_t>(), 0x10);
+	EXPECT_EQ(reader.template read<uint8_t>(), 0x10);
 }
 
 TYPED_TEST(ReaderTest, Read_Short) {
 	auto& reader = this->getReader();
 
 	reader.seek(kIntStart, SEEK_SET);
-	EXPECT_EQ(reader.read<uint16_t>(), 0x1020);
+	EXPECT_EQ(reader.template read<uint16_t>(), 0x1020);
 }
 
 TYPED_TEST(ReaderTest, Read_Int) {
 	auto& reader = this->getReader();
 
 	reader.seek(kIntStart, SEEK_SET);
-	EXPECT_EQ(reader.read<uint32_t>(), 0x10203040);
+	EXPECT_EQ(reader.template read<uint32_t>(), 0x10203040);
 }
 
 TYPED_TEST(ReaderTest, Read_SignedInt) {
 	auto& reader = this->getReader();
 
 	reader.seek(kSignedIntStart, SEEK_SET);
-	EXPECT_EQ(reader.read<int32_t>(), -2);
+	EXPECT_EQ(reader.template read<int32_t>(), -2);
 }
 
 TYPED_TEST(ReaderTest, Read_Float) {
 	auto& reader = this->getReader();
 
 	reader.seek(kFloatStart, SEEK_SET);
-	EXPECT_EQ(reader.read<float>(), 1.0);
+	EXPECT_EQ(reader.template read<float>(), 1.0);
 }
 
 TYPED_TEST(ReaderTest, Read_Double) {
 	auto& reader = this->getReader();
 
 	reader.seek(kDoubleStart, SEEK_SET);
-	EXPECT_EQ(reader.read<double>(), 1.0);
+	EXPECT_EQ(reader.template read<double>(), 1.0);
 }
 
 TYPED_TEST(ReaderTest, Read_Enum) {
@@ -242,14 +245,14 @@ TYPED_TEST(ReaderTest, Read_Enum) {
 	auto& reader = this->getReader();
 
 	reader.seek(kEnumStart, SEEK_SET);
-	EXPECT_EQ(reader.read<TestEnum>(), TestEnum::C);
+	EXPECT_EQ(reader.template read<TestEnum>(), TestEnum::C);
 }
 
 TYPED_TEST(ReaderTest, Read_NBytesInt) {
 	auto& reader = this->getReader();
 	reader.seek(kIntStart, SEEK_SET);
 
-	uint32_t expected = reader.read<uint32_t, 2>();
+	uint32_t expected = reader.template read<uint32_t, 2>();
 	EXPECT_EQ(expected, 0x10200000);
 }
 
@@ -319,7 +322,7 @@ TYPED_TEST(ReaderTest, Position) {
 
 	EXPECT_EQ(reader.position(), 0);
 	
-	reader.read<int>();
+	reader.template read<int>();
 	EXPECT_EQ(reader.position(), 4);
 	reader.expectBytes("ng:");
 	EXPECT_EQ(reader.position(), 7);

@@ -1,18 +1,26 @@
+#define _CRT_SECURE_NO_WARNINGS
+
 #include "CppSlippi/CppSlippi.h"
 
-#include <array>
+#include <cerrno>
+#include <cstdint>
+#include <cstdio>
 #include <filesystem>
 #include <format>
+#include <optional>
 #include <stdexcept>
+#include <string>
+#include <unordered_map>
 
 #include <gmock/gmock-matchers.h>
 #include <gmock/gmock-more-matchers.h>
 #include <gtest/gtest.h>
 
 #include "CppSlippi/Model.h"
+#include "CppSlippi/Options.h"
 #include "CppSlippi/Reading/BufferedReader.h"
 #include "CppSlippi/Reading/FileReader.h"
-#include "CppSlippi/Reading/Reader.h"
+#include "CppSlippi/Utils/PortArray.h"
 #include "Model/Matchers.h"
 
 
@@ -39,9 +47,8 @@ private:
 };
 
 Game parseGame(const char* filename, Options options = {}) {
-	FILE* file;
-	errno_t err = fopen_s(&file, filename, "rb");
-	if (err) {
+	FILE* file = fopen(filename, "rb");
+	if (!file) {
 		const std::string& currentDir = std::filesystem::current_path().string();
 		throw std::runtime_error(std::format("Failed to open file {}. Error: {}. Working directory: {}",
 			filename, errno, currentDir));
@@ -529,6 +536,40 @@ TEST(CppSlippi, v3_12) {
 	EXPECT_THAT(game.start, Optional(GameStartEq(expectedStart)));
 }
 
+TEST(CppSlippi, v3_13) {
+	Game game = parseGame("v3.13.slp", { .fullwidthToHalfwidth = true });
+
+	EXPECT_THAT(game.start->slippi, Eq(Slippi{ .version = {3, 13, 0, 0}}));
+
+	utils::PortArray<int8_t> expected = {0, 1, -1, -1};
+	EXPECT_THAT(game.end->playerPlacements, Optional(expected));
+}
+
+TEST(CppSlippi, v3_14) {
+	Game game = parseGame("v3.14.slp", { .fullwidthToHalfwidth = true });
+
+	EXPECT_THAT(game.start->slippi, Eq(Slippi{ .version = {3, 14, 0, 0}}));
+	EXPECT_THAT(game.start->matchId, Optional(testing::StrEq("mode.unranked-2023-03-15T06:36:14.98-0")));
+	EXPECT_THAT(game.start->gameNumber, Optional(1));
+	EXPECT_THAT(game.start->tiebreakerNumber, Optional(0));
+}
+
+TEST(CppSlippi, v3_15) {
+	Game game = parseGame("v3.15.slp", { .fullwidthToHalfwidth = true });
+
+	EXPECT_THAT(game.start->slippi, Eq(Slippi{ .version = {3, 15, 0, 0}}));
+	EXPECT_THAT(game.frames[124].ports[Port::P1]->leader.pre->rawAnalogY, Optional(-44));
+}
+
+TEST(CppSlippi, v3_16) {
+	Game game = parseGame("v3.16.slp", { .fullwidthToHalfwidth = true });
+
+	EXPECT_THAT(game.start->slippi, Eq(Slippi{ .version = {3, 16, 0, 0}}));
+	EXPECT_THAT(game.frames[407].ports[Port::P1]->leader.post->instanceHitBy, Optional(71));
+	EXPECT_THAT(game.frames[407].ports[Port::P1]->leader.post->instanceId, Optional(82));
+	EXPECT_THAT(game.frames[407].items.front().instanceId, Optional(82));
+}
+
 TEST(CppSlippi, CorruptNames_ParsedSafely) {
 	// P1's names in this file are all missing null-terminators.
 	Game game = parseGame("corrupt_names.slp", { .fullwidthToHalfwidth = true });
@@ -742,6 +783,21 @@ TEST(CppSlippi, SkipFrames) {
 	EXPECT_THAT(game.frames, IsEmpty());
 	EXPECT_THAT(game.end, Optional(GameEndEq(expectedEnd)));
 	EXPECT_THAT(game.metadata, Eq(std::nullopt));
+}
+
+TEST(ParserTest, DuplicateGameEnd) {
+	Game game = parseGame("duplicate_game_end.slp", {
+			.rollback = Options::Rollback::ALL,
+			.interestedEvents = Options::InterestedEvents::ALL | Options::InterestedEvents::METADATA
+		});
+
+	Game::End expectedEnd = {
+		.method = Game::End::Method::GAME,
+		.lrasInitiator = Port::NONE,
+		.playerPlacements = {{1, 0, -1, -1}},
+	};
+
+	EXPECT_THAT(game.end, Optional(GameEndEq(expectedEnd)));
 }
 
 }  // namespace cpp_slippi

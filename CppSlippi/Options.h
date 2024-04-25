@@ -2,6 +2,8 @@
 
 #include <cstdint>
 
+#include "CppSlippi/Utils/Enums.h"
+
 
 namespace cpp_slippi {
 
@@ -9,6 +11,16 @@ namespace cpp_slippi {
 struct Options {
 	enum class Rollback : uint8_t {
 		ALL, FIRST, LAST
+	};
+	
+	enum class ShiftJisErrorHandling : uint8_t {
+		// Throw an exception if any error is encountered in a ShiftJIS string.
+		// The exception will attempt to describe the nature of the error.
+		THROW_EXCEPTIONS,
+		// Attempt to gracefully handle errors in ShiftJIS strings. Invalid
+		// characters will be mapped to U+FFFD (REPLACEMENT CHARACTER), other
+		// errors will cause the string to be truncated.
+		GRACEFUL,
 	};
 
 	class InterestedEvents {
@@ -37,6 +49,8 @@ struct Options {
 
 	// Convert fullwidth ASCII characters to halfwidth (regular) characters.
 	bool fullwidthToHalfwidth = true;
+
+	ShiftJisErrorHandling shiftJisErrorHandling = ShiftJisErrorHandling::THROW_EXCEPTIONS;
 };
 
 } // namespace cpp_slippi

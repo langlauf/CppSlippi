@@ -1,7 +1,11 @@
 #include "Costume.h"
 
+#include <array>
 #include <format>
-#include <utility>
+#include <initializer_list>
+
+#include "CppSlippi/Model/Enums/Character.h"
+
 
 namespace cpp_slippi {
 namespace {

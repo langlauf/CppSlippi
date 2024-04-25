@@ -1,6 +1,6 @@
 #pragma once
 
-#include <cstdint>
+#include <cstddef>
 
 #include "CppSlippi/Reading/Reader.h"
 #include "CppSlippi/Utils/Defines.h"

@@ -1,5 +1,7 @@
 #include "CppSlippi/Parsing/BlockReader.h"
 
+#include <cstddef>
+#include <cstdint>
 #include <string>
 
 #include <gtest/gtest.h>

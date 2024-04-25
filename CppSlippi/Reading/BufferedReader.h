@@ -1,7 +1,8 @@
 #pragma once
 
+#include <algorithm>
 #include <concepts>
-#include <cstdint>
+#include <cstddef>
 #include <cstdio>
 #include <vector>
 
@@ -14,7 +15,7 @@ template<typename R>
 requires std::derived_from<R, Reader>
 class BufferedReader final : public Reader {
 public:
-	BufferedReader(R reader, size_t bufferSize = 32*4096) :
+	explicit BufferedReader(R reader, size_t bufferSize = 32*4096) :
 			Reader(reader.seekable()),
 			reader_(std::move(reader)),
 			buffer_(bufferSize),

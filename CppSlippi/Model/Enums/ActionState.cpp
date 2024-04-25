@@ -2,10 +2,14 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdint>
 #include <format>
 #include <initializer_list>
 #include <string_view>
 #include <utility>
+
+#include "CppSlippi/Model/Enums/Character.h"
+
 
 namespace cpp_slippi {
 namespace details {
@@ -1355,6 +1359,5 @@ ActionState ActionMapper::toActionState(Action action) const {
 	}
 	return actionState;
 }
-
 
 }  // namespace cpp_slippi

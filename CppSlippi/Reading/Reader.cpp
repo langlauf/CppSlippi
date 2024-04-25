@@ -1,6 +1,9 @@
 #include "Reader.h"
 
-#include <cstring>
+#include <cstddef>
+#include <cstdio>
+
+#include "CppSlippi/Reading/ReadException.h"
 
 
 namespace cpp_slippi::reading {

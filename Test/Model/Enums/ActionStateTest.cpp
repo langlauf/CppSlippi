@@ -1,5 +1,8 @@
 #include "CppSlippi/Model/Enums/ActionState.h"
 
+#include <cstdint>
+#include <stdexcept>
+
 #include <gtest/gtest.h>
 
 #include "CppSlippi/Model/Enums/Character.h"

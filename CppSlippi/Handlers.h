@@ -2,6 +2,8 @@
 
 #include <vector>
 
+#include <nlohmann/json.hpp>
+
 #include "CppSlippi/Model.h"
 
 

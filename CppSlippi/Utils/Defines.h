@@ -15,5 +15,7 @@
 		#else
 			#define CPP_SLIPPI_API
 		#endif
+	#else
+		#define CPP_SLIPPI_API
 	#endif
 #endif

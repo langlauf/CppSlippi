@@ -11,8 +11,8 @@
 #include "CppSlippi/Model/Enums/Character.h"
 #include "CppSlippi/Model/Enums/Port.h"
 #include "CppSlippi/Model/Item.h"
-#include "CppSlippi/Model/Triggers.h"
 #include "CppSlippi/Model/Primitives.h"
+#include "CppSlippi/Model/Triggers.h"
 #include "CppSlippi/Utils/Endian.h"
 #include "CppSlippi/Utils/PortArray.h"
 
@@ -35,8 +35,8 @@ enum class StateFlags : uint64_t {
 	DEAD = 1llu << 38,
 	OFF_SCREEN = 1llu << 39,
 };
-template<> constexpr bool is_bitfield<StateFlags> = true;
-template<> constexpr std::endian kEndian<StateFlags> = std::endian::little;
+template<> inline constexpr bool is_bitfield<StateFlags> = true;
+template<> inline constexpr std::endian kEndian<StateFlags> = std::endian::little;
 
 
 enum class LCancel : uint8_t {
@@ -105,10 +105,13 @@ struct Pre {
 	Buttons buttons;
 
 	// added(1.2.0) Raw x analog controller input (for UCF)
-	std::optional<uint8_t> rawAnalogX;
+	std::optional<int8_t> rawAnalogX;
 
 	// added(1.4.0) Current damage percent
 	std::optional<float> damage;
+
+	// added(3.15.0) Raw y analog controller input (for UCF)
+	std::optional<int8_t> rawAnalogY;
 
 	friend bool operator==(const Pre&, const Pre&) = default;
 };
@@ -203,6 +206,13 @@ struct Post {
 	//   3 = Wait2
 	//   4 = Wait3
 	std::optional<uint32_t> animationIndex;
+
+	// added(3.16.0) Instance ID of the player/item that last hit this player
+	std::optional<uint16_t> instanceHitBy;
+
+	// added(3.16.0) Serially generated, unique ID for each new action state
+	// across all fighters. Resets to 0 temporarily on death.
+	std::optional<uint16_t> instanceId;
 
 	friend bool operator==(const Post&, const Post&) = default;
 };

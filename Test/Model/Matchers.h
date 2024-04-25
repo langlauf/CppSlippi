@@ -1,12 +1,10 @@
 #pragma once
 
-#include <functional>
-#include <iostream>
 #include <string>
 #include <tuple>
 #include <type_traits>
 
-#include <gmock/gmock-matchers.h>
+#include <gmock/gmock.h>
 
 #include "CppSlippi/Model.h"
 
@@ -134,6 +132,7 @@ DEFINE_MATCHER(GameStartEq, const Game::Start& expected, "equal Game::Start") {
 	return testing::AllOf(
 		testing::Field("slippi", &Game::Start::slippi, SlippiEq(expected.slippi)),
 		testing::Field("bitfield", &Game::Start::bitfield, testing::Eq(expected.bitfield)),
+		testing::Field("timerBehavior", &Game::Start::timerBehavior, testing::Eq(expected.timerBehavior)),
 		testing::Field("gameMode", &Game::Start::gameMode, testing::Eq(expected.gameMode)),
 		testing::Field("isRainingBombs", &Game::Start::isRainingBombs, testing::Eq(expected.isRainingBombs)),
 		testing::Field("isTeams", &Game::Start::isTeams, testing::Eq(expected.isTeams)),
@@ -149,8 +148,8 @@ DEFINE_MATCHER(GameStartEq, const Game::Start& expected, "equal Game::Start") {
 		testing::Field("scene", &Game::Start::scene, MatchOptional(testing::Eq(), expected.scene)),
 		testing::Field("language", &Game::Start::language, MatchOptional(testing::Eq(), expected.language)),
 		testing::Field("matchId", &Game::Start::matchId, MatchOptional(testing::Eq(), expected.matchId)),
-		testing::Field("matchNumber", &Game::Start::matchNumber, MatchOptional(testing::Eq(), expected.matchNumber)),
-		testing::Field("tiebreakerId", &Game::Start::tiebreakerNumber, MatchOptional(testing::Eq(), expected.matchNumber)));
+		testing::Field("gameNumber", &Game::Start::gameNumber, MatchOptional(testing::Eq(), expected.gameNumber)),
+		testing::Field("tiebreakerNumber", &Game::Start::tiebreakerNumber, MatchOptional(testing::Eq(), expected.gameNumber)));
 }
 
 DEFINE_MATCHER(GameEndEq, const Game::End& expected, "equal Game::End") {
@@ -201,7 +200,8 @@ DEFINE_MATCHER(ItemEq, const Item& expected, "equal Item") {
 		testing::Field("misc2", &Item::misc2, testing::Eq(expected.misc2)),
 		testing::Field("misc3", &Item::misc3, testing::Eq(expected.misc3)),
 		testing::Field("misc4", &Item::misc4, testing::Eq(expected.misc4)),
-		testing::Field("owner", &Item::owner, MatchOptional(testing::Eq(), expected.owner)));
+		testing::Field("owner", &Item::owner, MatchOptional(testing::Eq(), expected.owner)),
+		testing::Field("instanceId", &Item::instanceId, MatchOptional(testing::Eq(), expected.instanceId)));
 }
 
 DEFINE_MATCHER(PreEq, const Pre& expected, "equal Pre") {
@@ -218,7 +218,8 @@ DEFINE_MATCHER(PreEq, const Pre& expected, "equal Pre") {
 		testing::Field("triggers", &Pre::triggers, testing::Eq(expected.triggers)),
 		testing::Field("buttons", &Pre::buttons, testing::Eq(expected.buttons)),
 		testing::Field("rawAnalogX", &Pre::rawAnalogX, MatchOptional(testing::Eq(), expected.rawAnalogX)),
-		testing::Field("damage", &Pre::damage, MatchOptional(testing::Eq(), expected.damage)));
+		testing::Field("damage", &Pre::damage, MatchOptional(testing::Eq(), expected.damage)),
+		testing::Field("rawAnalogY", &Pre::rawAnalogY, MatchOptional(testing::Eq(), expected.rawAnalogY)));
 }
 
 DEFINE_MATCHER(PostEq, const Post& expected, "equal Post") {
@@ -246,7 +247,7 @@ DEFINE_MATCHER(PostEq, const Post& expected, "equal Post") {
 		testing::Field("hurtboxState", &Post::hurtboxState, MatchOptional(testing::Eq(), expected.hurtboxState)),
 		testing::Field("velocities", &Post::velocities, MatchOptional(VelocitiesEq(), expected.velocities)),
 		testing::Field("hitlagRemaining", &Post::hitlagRemaining, MatchOptional(testing::Eq(), expected.hitlagRemaining)),
-		testing::Field("animation_index", &Post::animationIndex, MatchOptional(testing::Eq(), expected.animationIndex)));
+		testing::Field("animationIndex", &Post::animationIndex, MatchOptional(testing::Eq(), expected.animationIndex)));
 }
 
 DEFINE_MATCHER(FramePlayerDataEq, const Frame::Player::Data& expected, "equal Frame::Player::Data") {

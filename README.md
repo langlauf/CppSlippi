@@ -69,6 +69,7 @@ Both APIs provide several options to control the parsing behavior. These may be 
 * `rollback`: When a frame is rollbacked are found in a replay found, controls whether the `FIRST`, `LAST`, or `ALL` versions of the frame are returned. (Default `LAST`)
 * `interestedEvents`: You may specify which [events](https://github.com/project-slippi/slippi-wiki/blob/master/SPEC.md#events) you are interested in. Only those events will be returned. Parsing fewer events speeds up parsing. (Default `ALL`)
 * `fullwidthToHalfwidth`: When Shift JIS strings are converted to UTF-8, this option controls whether full-width Latin characters are converted to normal half-width characters. Does not affect full-width Japanese characters. (Default `true`)
+* `shiftJisErrorHandling`: Controls the handling of errors in decoding ShiftJIS strings. `THROW_EXCEPTIONS` will raise an exception. `GRACEFUL` will map invalid character to U+FFFD (REPLACEMENT CHARACTER) or truncate the string.
 
 ### Readers
 
@@ -85,6 +86,9 @@ Two exception types are thrown by this library.
 
 * `ParseException`: Thrown when there is a problem parsing a .slp file.
 * `ReadException`: Thrown when a file cannot be read.
+* `ShiftJisException`: Indicates an error converting to or from ShiftJIS.
+* `NoKnownActionStateException`: Indicates that a requested action does not exist for a given character.
+* `NoSuchColorException`: Indicates that a requested color does not exist for a given character.
 
 In addition, `std` exceptions may be thrown in some cases.
 

@@ -1,5 +1,13 @@
 #include "ShiftJis.h"
 
+#include <cstddef>
+#include <cstdint>
+#include <format>
+#include <string>
+#include <string_view>
+
+#include "CppSlippi/Options.h"
+
 
 namespace cpp_slippi::parsing {
 
@@ -9,12 +17,13 @@ namespace { extern const unsigned char convTable[25088]; }
 // https://stackoverflow.com/questions/33165171/c-shiftjis-to-utf8-conversion
 std::string ShiftJisConverter::toUtf8(std::string_view shiftJis) const {
 	std::string output;
-	// ShiftJis won't give 4 byte UTF8, so max. 3 byte per input char are needed.
+	// ShiftJis won't give 4 byte UTF8, so max 3 bytes per input char are needed.
 	output.reserve(3 * shiftJis.size());
 	size_t indexInput = 0;
 
 	while (indexInput < shiftJis.size()) {
 		uint8_t b = shiftJis[indexInput++];
+		uint16_t shiftJisChar = b;
 		char arraySection = b >> 4;
 
 		size_t arrayOffset =
@@ -28,17 +37,26 @@ std::string ShiftJisConverter::toUtf8(std::string_view shiftJis) const {
 		// Determining real array offset
 		if (arrayOffset) {
 			arrayOffset += (b & 0xF) << 8;
-			b = shiftJis[indexInput++];
-			if (indexInput > shiftJis.size()) {
+			if (indexInput >= shiftJis.size()) {
 				// ShiftJIS ended in the middle of a character.
-				break;
+				if (errorHandling_ == Options::ShiftJisErrorHandling::GRACEFUL) {
+					return output;
+				} else {
+					// errorHandling_ == Options::ShiftJisErrorHandling::GRACEFUL
+					throw ShiftJisException("Invalid ShiftJIS string. String ended unexpectedly in the middle of a character.");
+				}
 			}
+			b = shiftJis[indexInput++];
+			shiftJisChar = (shiftJisChar << 8) | b;
 		}
 
 		arrayOffset = 2*(arrayOffset + b);
 
 		// Unicode number, guaranteed to fit in two bytes.
 		uint16_t unicodeValue = (convTable[arrayOffset] << 8) | convTable[arrayOffset + 1];
+		if (errorHandling_ == Options::ShiftJisErrorHandling::THROW_EXCEPTIONS && unicodeValue == 0xFFFD) {
+			throw ShiftJisException(std::format("Invalid ShiftJIS character. Value: {:#06X}", shiftJisChar));
+		}
 
 		if (fullwidthToHalfwidth_) {
 			if (unicodeValue >= 0xFF01 && unicodeValue < 0xFF5F) {
@@ -62,6 +80,7 @@ std::string ShiftJisConverter::toUtf8(std::string_view shiftJis) const {
 	}
 	return output;
 }
+
 
 namespace {
 

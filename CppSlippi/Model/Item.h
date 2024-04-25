@@ -56,6 +56,9 @@ struct Item {
 	// added(3.6.0) Port of player who owns this item. -1 when not owned
 	std::optional<Port> owner;
 
+	// added(3.16.0) Inherited instance ID of the owner. 0 when not owned
+	std::optional<uint16_t> instanceId;
+
 	friend bool operator==(const Item&, const Item&) = default;
 };
 

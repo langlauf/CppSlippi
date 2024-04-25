@@ -4,10 +4,15 @@
 #include <concepts>
 #include <cstdint>
 #include <format>
-#include <unordered_set>
+#include <memory>
+#include <optional>
+#include <vector>
 
-#include "CppSlippi/Parsing/Utils.h"
+#include "CppSlippi/Handlers.h"
+#include "CppSlippi/Model.h"
+#include "CppSlippi/Options.h"
 #include "CppSlippi/Parsing/ParseException.h"
+#include "CppSlippi/Parsing/Utils.h"
 
 
 namespace cpp_slippi::parsing {

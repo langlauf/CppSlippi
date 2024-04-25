@@ -1,6 +1,5 @@
 #pragma once
 
-#include <cstdint>
 #include <utility>
 
 #include "CppSlippi/Handlers.h"

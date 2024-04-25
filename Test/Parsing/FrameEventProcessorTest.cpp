@@ -1,12 +1,12 @@
 #include "CppSlippi/Parsing/FrameEventProcessor.h"
 
-#include <optional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
-#include <gtest/gtest.h>
 #include <gmock/gmock.h>
+#include <gtest/gtest.h>
 
 #include "CppSlippi/Handlers.h"
 #include "CppSlippi/Model.h"
@@ -14,6 +14,7 @@
 #include "CppSlippi/Parsing/ParseException.h"
 #include "CppSlippi/Parsing/Utils.h"
 #include "Model/Matchers.h"
+#include <cstdint>
 
 
 using testing::_;

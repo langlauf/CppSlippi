@@ -2,19 +2,19 @@
 
 #include <bit>
 #include <cstdint>
-#include <optional>
 #include <memory>
-#include <vector>
+#include <optional>
 #include <string>
+#include <vector>
 
 #include <nlohmann/json.hpp>
 
+#include "CppSlippi/Model/Enums/Item.h"
 #include "CppSlippi/Model/Enums/Port.h"
 #include "CppSlippi/Model/Enums/Stage.h"
-#include "CppSlippi/Model/Enums/Item.h"
 #include "CppSlippi/Model/Frame.h"
-#include "CppSlippi/Model/Player.h"
 #include "CppSlippi/Model/Metadata.h"
+#include "CppSlippi/Model/Player.h"
 #include "CppSlippi/Utils/BitFields.h"
 #include "CppSlippi/Utils/Endian.h"
 #include "CppSlippi/Utils/PortArray.h"
@@ -196,7 +196,7 @@ struct Game {
 		std::optional<std::string> matchId;
 
 		// added(3.14.0) For the given Match ID, starts at 1
-		std::optional<uint32_t> matchNumber;
+		std::optional<uint32_t> gameNumber;
 
 		// added(3.14.0) For the given Game Number, will be 0 if not a tiebreak
 		// game
@@ -236,7 +236,7 @@ struct Game {
 	std::optional<GeckoCodes> geckoCodes;
 };
 
-template<> constexpr bool is_bitfield<Game::Bitfield> = true;
-template<> constexpr std::endian kEndian<Game::Bitfield> = std::endian::little;
+template<> inline constexpr bool is_bitfield<Game::Bitfield> = true;
+template<> inline constexpr std::endian kEndian<Game::Bitfield> = std::endian::little;
 
 }  // namespace cpp_slippi

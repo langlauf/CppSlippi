@@ -1,8 +1,8 @@
 #pragma once
 
 #include <cstdint>
-#include <string>
 #include <optional>
+#include <string>
 
 #include "CppSlippi/Model/Enums/Character.h"
 #include "CppSlippi/Model/Enums/Costume.h"
@@ -147,6 +147,6 @@ struct Player {
 
 	friend constexpr bool operator==(const Player&, const Player&) = default;
 };
-template<> constexpr bool is_bitfield<Player::Bitfield> = true;
+template<> inline constexpr bool is_bitfield<Player::Bitfield> = true;
 
 }  // namespace cpp_slippi

@@ -1,23 +1,29 @@
 #include "Parse.h"
 
 #include <array>
+#include <concepts>
+#include <cstdint>
 #include <cstdio>
 #include <cstring>
-#include <concepts>
 #include <format>
+#include <memory>
 #include <optional>
+#include <string>
 #include <unordered_map>
+#include <utility>
 #include <variant>
 
 #include <nlohmann/json.hpp>
 
+#include "CppSlippi/Handlers.h"
 #include "CppSlippi/Model.h"
+#include "CppSlippi/Options.h"
 #include "CppSlippi/Parsing/BlockReader.h"
 #include "CppSlippi/Parsing/FrameEventProcessor.h"
 #include "CppSlippi/Parsing/ParseException.h"
 #include "CppSlippi/Parsing/ShiftJis.h"
 #include "CppSlippi/Parsing/Utils.h"
-#include "CppSlippi/Reading/FixedBufferReader.h"
+#include "CppSlippi/Reading/Reader.h"
 #include "CppSlippi/Utils/PortArray.h"
 
 
@@ -147,7 +153,7 @@ std::optional<T> tryGet(const nlohmann::json& json, const std::string& key) {
 	return json.at(key).get<T>();
 }
 
-Metadata  parseMetadata(const nlohmann::json& rawMetadata) {
+Metadata parseMetadata(const nlohmann::json& rawMetadata) {
 	Metadata metadata = {
 		.startAt = tryGet<std::string>(rawMetadata, "startAt"),
 		.lastFrame = tryGet<int32_t>(rawMetadata, "lastFrame"),
@@ -218,42 +224,44 @@ public:
 		Handlers& handlers,
 		const std::unordered_map<EventType, uint16_t>& payloadSizes,
 		std::optional<uint32_t> numFramesFromMetadata,
+		std::optional<uint32_t> length,
 		Reader& stream) :
 			// Initialization of frameEventProcessor is deferred until we read
 			// GAME_START. This requires that GAME_START is the first event,
 			// which seems to be fine.
 			frameEventProcessor_(nullptr),
 			options_(options),
-			shiftJis_(options.fullwidthToHalfwidth),
+			shiftJis_(options.fullwidthToHalfwidth, options.shiftJisErrorHandling),
 			handlers_(handlers),
 			payloadSizes_(payloadSizes),
 			numFramesFromMetadata_(numFramesFromMetadata),
+			length_(length),
 			stream_(stream) {}
 
-	void parseEvents(std::optional<uint32_t> length) {
+	void parseEvents() {
 		uint32_t bytesRead = 0;
 		EventType lastEvent = EventType::EVENT_PAYLOADS;
 
 		// We must check for GAME_END as well because we don't know the length
 		// of streaming files.
-		while ((!length || bytesRead <= *length) && lastEvent != EventType::GAME_END) {
+		while ((!length_ || bytesRead < *length_) && lastEvent != EventType::GAME_END) {
 			// Skip to the end if the only remaining interested event is
 			// GAME_END and we have a frameEventProcessor (requires parsing
 			// GAME_START).
-			if (length && options_.interestedEvents == Options::InterestedEvents::GAME_END && frameEventProcessor_) {
+			if (length_ && options_.interestedEvents == Options::InterestedEvents::GAME_END && frameEventProcessor_) {
 				uint16_t gameEndSize = payloadSizes_.at(EventType::GAME_END);
-				if (*length - bytesRead < gameEndSize) {
+				if (*length_ - bytesRead < gameEndSize) {
 					throw ParseException(std::format("Want to skip to GAME_END event, but only {} bytes available ({} bytes required for GAME_END).",
-						*length - bytesRead, gameEndSize));
+						*length_ - bytesRead, gameEndSize));
 				}
-				uint32_t skip = *length - bytesRead - gameEndSize;
+				uint32_t skip = *length_ - bytesRead - gameEndSize;
 				stream_.seek(skip);
 				bytesRead += skip;
 			}
 
 			size_t payloadStart = stream_.position();
 
-			auto [eventSize, eventType] = parseEvent(length, bytesRead);
+			auto [eventSize, eventType] = parseEvent(bytesRead);
 			bytesRead += eventSize;
 			lastEvent = eventType;
 
@@ -261,10 +269,18 @@ public:
 			// position the stream for the next event.
 			stream_.seek(payloadStart + eventSize - stream_.position());
 		}
+
+		// In rare cases the GameEnd event can be duplicated. If we know the
+		// length of the events array we can skip the duplicated events to the
+		// end. If we do not know the length, there's nothing we can do and we
+		// will fail trying to parse Metadata next.
+		if (length_ && bytesRead < *length_) {
+			stream_.seek(*length_ - bytesRead);
+		}
 	}
 
 private:
-	std::pair<uint16_t, EventType> parseEvent(std::optional<uint32_t> length, uint32_t bytesRead) {
+	std::pair<uint16_t, EventType> parseEvent(uint32_t bytesRead) {
 		BlockReader reader(stream_);
 		EventType eventType = reader.read<EventType>(0x0);
 
@@ -277,7 +293,7 @@ private:
 		uint16_t size = it->second;
 		switch (eventType) {
 			case EventType::MESSAGE_SPLITTER: {
-				parseMessageSplitter(reader, size);
+				parseMessageSplitter(reader);
 				break;
 			} case EventType::GAME_START: {
 				// Always parse Game::Start because it provides some useful
@@ -289,8 +305,8 @@ private:
 				// better than the frames from metadata because it accounts for
 				// rollback.
 				std::optional<uint32_t> hintNumFrames = numFramesFromMetadata_;
-				if (options_.rollback == Options::Rollback::ALL && length) {
-					hintNumFrames = estimateNumFramesFromPayloadSizes(start, *length - bytesRead, payloadSizes_);
+				if (options_.rollback == Options::Rollback::ALL && length_) {
+					hintNumFrames = estimateNumFramesFromPayloadSizes(start, *length_ - bytesRead, payloadSizes_);
 				}
 
 				if (hintNumFrames) {
@@ -360,7 +376,7 @@ private:
 		return {size, eventType};
 	}
 
-	void parseMessageSplitter(BlockReader& reader, size_t size) {
+	void parseMessageSplitter(BlockReader& reader) {
 		MessageSplitter splitter = {
 			.payload = reader.read<MessageSplitter::Payload>(0x1),
 			.actualSize = reader.read<uint16_t>(0x201),
@@ -570,7 +586,7 @@ private:
 
 		auto matchId = reader.read<std::array<char, 50>>(0x2BE);
 		start.matchId = std::string(matchId.data(), strnlen(matchId.data(), matchId.size()));
-		start.matchNumber = reader.read<uint32_t>(0x2F1);
+		start.gameNumber = reader.read<uint32_t>(0x2F1);
 		start.tiebreakerNumber = reader.read<uint32_t>(0x2F5);
 		return start;
 	}
@@ -644,13 +660,19 @@ private:
 		if (size <= 0x3B) {
 			return pre;
 		}
-		pre.rawAnalogX = reader.read<uint8_t>(0x3B);
+		pre.rawAnalogX = reader.read<int8_t>(0x3B);
 
 		// version < 1.4.0
 		if (size <= 0x3C) {
 			return pre;
 		}
 		pre.damage = reader.read<float>(0x3C);
+
+		// version < 3.15.0
+		if (size <= 0x40) {
+			return pre;
+		}
+		pre.rawAnalogY = reader.read<int8_t>(0x40);
 		return pre;
 	}
 
@@ -725,6 +747,13 @@ private:
 			return post;
 		}
 		post.animationIndex = reader.read<uint32_t>(0x4D);
+
+		// version < 3.16.0
+		if (size <= 0x51) {
+			return post;
+		}
+		post.instanceHitBy = reader.read<uint16_t>(0x51);
+		post.instanceId = reader.read<uint16_t>(0x53);
 		return post;
 	}
 
@@ -761,6 +790,12 @@ private:
 			return item;
 		}
 		item.owner = reader.read<Port>(0x2A);
+
+		// version < 3.16.0
+		if (size <= 0x2B) {
+			return item;
+		}
+		item.instanceId = reader.read<uint16_t>(0x2B);
 		return item;
 	}
 
@@ -782,6 +817,7 @@ private:
 	Handlers& handlers_;
 	const std::unordered_map<EventType, uint16_t> payloadSizes_;
 	std::optional<uint32_t> numFramesFromMetadata_;
+	std::optional<uint32_t> length_;
 	Reader& stream_;
 };
 
@@ -816,8 +852,8 @@ void Parser::parseGame(Handlers& handlers, reading::Reader& reader) {
 		}
 	}
 
-	EventParser eventParser(options_, handlers, payloadSizes, numFramesFromMetadata, reader);
-	eventParser.parseEvents(remainingLength);
+	EventParser(options_, handlers, payloadSizes, numFramesFromMetadata, remainingLength, reader)
+		.parseEvents();
 
 	if (options_.interestedEvents & Options::InterestedEvents::METADATA) {
 		if (!rawMetadata) {

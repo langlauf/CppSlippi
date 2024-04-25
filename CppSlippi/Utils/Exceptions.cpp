@@ -2,6 +2,8 @@
 
 #include <filesystem>
 #include <format>
+#include <source_location>
+#include <string>
 
 
 namespace cpp_slippi::utils {

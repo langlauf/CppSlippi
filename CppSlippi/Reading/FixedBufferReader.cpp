@@ -1,7 +1,10 @@
 #include "FixedBufferReader.h"
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdio>
 #include <cstring>
+#include <utility>
 
 
 namespace cpp_slippi::reading {

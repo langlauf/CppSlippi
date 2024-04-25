@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15...3.24)
 
-set(VERSION 1.3.3.14)
+set(VERSION 1.4.3.16)
 
 project(CppSlippi
 	VERSION ${VERSION}

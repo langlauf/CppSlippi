@@ -57,8 +57,8 @@ public:
 	friend constexpr bool operator==(const Buttons&, const Buttons&) = default;
 };
 
-template<> constexpr bool is_bitfield<Buttons::Logical> = true;
-template<> constexpr bool is_bitfield<Buttons::Physical> = true;
+template<> inline constexpr bool is_bitfield<Buttons::Logical> = true;
+template<> inline constexpr bool is_bitfield<Buttons::Physical> = true;
 
 
 }  // namespace cpp_slippi
