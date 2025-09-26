@@ -185,23 +185,11 @@ DEFINE_MATCHER(ButtonsEq, const Buttons& expected, "equal Buttons") {
 		testing::Field("physical", &Buttons::physical, testing::Eq(expected.physical)));
 }
 
-DEFINE_MATCHER(ItemEq, const Item& expected, "equal Item") {
+DEFINE_MATCHER(FrameStartEq, const Frame::Start& expected, "equal Frame::Start") {
 	return testing::AllOf(
-		testing::Field("frameNumber", &Item::frameNumber, testing::Eq(expected.frameNumber)),
-		testing::Field("type", &Item::type, testing::Eq(expected.type)),
-		testing::Field("state", &Item::state, testing::Eq(expected.state)),
-		testing::Field("direction", &Item::direction, testing::Eq(expected.direction)),
-		testing::Field("velocity", &Item::velocity, VelocityEq(expected.velocity)),
-		testing::Field("position", &Item::position, PositionEq(expected.position)),
-		testing::Field("damage", &Item::damage, testing::Eq(expected.damage)),
-		testing::Field("expirationTimer", &Item::expirationTimer, testing::Eq(expected.expirationTimer)),
-		testing::Field("spawnId", &Item::spawnId, testing::Eq(expected.spawnId)),
-		testing::Field("misc1", &Item::misc1, testing::Eq(expected.misc1)),
-		testing::Field("misc2", &Item::misc2, testing::Eq(expected.misc2)),
-		testing::Field("misc3", &Item::misc3, testing::Eq(expected.misc3)),
-		testing::Field("misc4", &Item::misc4, testing::Eq(expected.misc4)),
-		testing::Field("owner", &Item::owner, MatchOptional(testing::Eq(), expected.owner)),
-		testing::Field("instanceId", &Item::instanceId, MatchOptional(testing::Eq(), expected.instanceId)));
+		testing::Field("frameNumber", &Frame::Start::frameNumber, testing::Eq(expected.frameNumber)),
+		testing::Field("randomSeed", &Frame::Start::randomSeed, testing::Eq(expected.randomSeed)),
+		testing::Field("sceneFrameCounter", &Frame::Start::sceneFrameCounter, MatchOptional(testing::Eq(), expected.sceneFrameCounter)));
 }
 
 DEFINE_MATCHER(PreEq, const Pre& expected, "equal Pre") {
@@ -219,7 +207,9 @@ DEFINE_MATCHER(PreEq, const Pre& expected, "equal Pre") {
 		testing::Field("buttons", &Pre::buttons, testing::Eq(expected.buttons)),
 		testing::Field("rawAnalogX", &Pre::rawAnalogX, MatchOptional(testing::Eq(), expected.rawAnalogX)),
 		testing::Field("damage", &Pre::damage, MatchOptional(testing::Eq(), expected.damage)),
-		testing::Field("rawAnalogY", &Pre::rawAnalogY, MatchOptional(testing::Eq(), expected.rawAnalogY)));
+		testing::Field("rawAnalogY", &Pre::rawAnalogY, MatchOptional(testing::Eq(), expected.rawAnalogY)),
+		testing::Field("rawCstickX", &Pre::rawCstickX, MatchOptional(testing::Eq(), expected.rawCstickX)),
+		testing::Field("rawCstickY", &Pre::rawCstickY, MatchOptional(testing::Eq(), expected.rawCstickY)));
 }
 
 DEFINE_MATCHER(PostEq, const Post& expected, "equal Post") {
@@ -262,11 +252,43 @@ DEFINE_MATCHER(FramePlayerEq, const Frame::Player& expected, "equal Frame::Playe
 		testing::Field("follower", &Frame::Player::follower, MatchOptional(FramePlayerDataEq(), expected.follower)));
 }
 
-DEFINE_MATCHER(FrameStartEq, const Frame::Start& expected, "equal Frame::Start") {
+DEFINE_MATCHER(ItemEq, const Item& expected, "equal Item") {
 	return testing::AllOf(
-		testing::Field("frameNumber", &Frame::Start::frameNumber, testing::Eq(expected.frameNumber)),
-		testing::Field("randomSeed", &Frame::Start::randomSeed, testing::Eq(expected.randomSeed)),
-		testing::Field("sceneFrameCounter", &Frame::Start::sceneFrameCounter, MatchOptional(testing::Eq(), expected.sceneFrameCounter)));
+		testing::Field("frameNumber", &Item::frameNumber, testing::Eq(expected.frameNumber)),
+		testing::Field("type", &Item::type, testing::Eq(expected.type)),
+		testing::Field("state", &Item::state, testing::Eq(expected.state)),
+		testing::Field("direction", &Item::direction, testing::Eq(expected.direction)),
+		testing::Field("velocity", &Item::velocity, VelocityEq(expected.velocity)),
+		testing::Field("position", &Item::position, PositionEq(expected.position)),
+		testing::Field("damage", &Item::damage, testing::Eq(expected.damage)),
+		testing::Field("expirationTimer", &Item::expirationTimer, testing::Eq(expected.expirationTimer)),
+		testing::Field("spawnId", &Item::spawnId, testing::Eq(expected.spawnId)),
+		testing::Field("misc1", &Item::misc1, testing::Eq(expected.misc1)),
+		testing::Field("misc2", &Item::misc2, testing::Eq(expected.misc2)),
+		testing::Field("misc3", &Item::misc3, testing::Eq(expected.misc3)),
+		testing::Field("misc4", &Item::misc4, testing::Eq(expected.misc4)),
+		testing::Field("owner", &Item::owner, MatchOptional(testing::Eq(), expected.owner)),
+		testing::Field("instanceId", &Item::instanceId, MatchOptional(testing::Eq(), expected.instanceId)));
+}
+
+DEFINE_MATCHER(FodPlatformsEq, const FodPlatforms& expected, "equal FodPlatforms") {
+	return testing::AllOf(
+		testing::Field("frameNumber", &FodPlatforms::frameNumber, testing::Eq(expected.frameNumber)),
+		testing::Field("platform", &FodPlatforms::platform, testing::Eq(expected.platform)),
+		testing::Field("height", &FodPlatforms::height, testing::Eq(expected.height)));
+}
+
+DEFINE_MATCHER(WhispyBlowDirectionEq, const WhispyBlowDirection& expected, "equal WhispyBlowDirection") {
+	return testing::AllOf(
+		testing::Field("frameNumber", &WhispyBlowDirection::frameNumber, testing::Eq(expected.frameNumber)),
+		testing::Field("direction", &WhispyBlowDirection::direction, testing::Eq(expected.direction)));
+}
+
+DEFINE_MATCHER(StadiumTransformationEq, const StadiumTransformation& expected, "equal StadiumTransformation") {
+	return testing::AllOf(
+		testing::Field("frameNumber", &StadiumTransformation::frameNumber, testing::Eq(expected.frameNumber)),
+		testing::Field("transformationEvent", &StadiumTransformation::transformationEvent, testing::Eq(expected.transformationEvent)),
+		testing::Field("transformationType", &StadiumTransformation::transformationType, testing::Eq(expected.transformationType)));
 }
 
 DEFINE_MATCHER(FrameEndEq, const Frame::End& expected, "equal Frame::End") {

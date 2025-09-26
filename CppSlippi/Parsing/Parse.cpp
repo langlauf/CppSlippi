@@ -45,6 +45,9 @@ enum class EventType : uint8_t {
 	FRAME_ITEM = 0x3B,
 	FRAME_END = 0x3C,
 	GECKO_CODES = 0x3D,
+	FOD_PLATFORMS = 0x3F,
+	WHISPY_BLOW_DIRECTION = 0x40,
+	STADIUM_TRANSFORMATION = 0x41,
 };
 
 
@@ -359,14 +362,32 @@ private:
 					frameEventProcessor_->processItem(item);
 				}
 				break;
+			} case EventType::GECKO_CODES: {
+				throw ParseException("Gecko Codes are only supported through Message Splitter.");
+				break;
+			} case EventType::FOD_PLATFORMS: {
+				if (options_.interestedEvents & Options::InterestedEvents::FOD_PLATFORMS) {
+					FodPlatforms fodPlatforms = parseFodPlatforms(reader, size);
+					frameEventProcessor_->processFodPlatforms(fodPlatforms);
+				}
+				break;
+			} case EventType::WHISPY_BLOW_DIRECTION: {
+				if (options_.interestedEvents & Options::InterestedEvents::WHISPY_BLOW_DIRECTION) {
+					WhispyBlowDirection direction = parseWhispyBlowDirection(reader, size);
+					frameEventProcessor_->processWhispyBlowDirection(direction);
+				}
+				break;
+			} case EventType::STADIUM_TRANSFORMATION: {
+				if (options_.interestedEvents & Options::InterestedEvents::STADIUM_TRANSFORMATION) {
+					StadiumTransformation transformations = parseStadiumTransformations(reader, size);
+					frameEventProcessor_->processStadiumTransformations(transformations);
+				}
+				break;
 			} case EventType::FRAME_END: {
 				if (options_.interestedEvents & Options::InterestedEvents::FRAME_END) {
 					Frame::End end = parseFrameEnd(reader, size);
 					frameEventProcessor_->processEnd(end);
 				}
-				break;
-			} case EventType::GECKO_CODES: {
-				throw ParseException("Gecko Codes are only supported through Message Splitter.");
 				break;
 			} default: {
 				// Unknown event type, just skip it.
@@ -673,6 +694,14 @@ private:
 			return pre;
 		}
 		pre.rawAnalogY = reader.read<int8_t>(0x40);
+
+		// version < 3.17.0
+		if (size <= 0x41) {
+			return pre;
+		}
+		pre.rawCstickX = reader.read<int8_t>(0x41);
+		pre.rawCstickY = reader.read<int8_t>(0x42);
+
 		return pre;
 	}
 
@@ -797,6 +826,29 @@ private:
 		}
 		item.instanceId = reader.read<uint16_t>(0x2B);
 		return item;
+	}
+
+	FodPlatforms parseFodPlatforms(BlockReader& reader, size_t size) {
+		FodPlatforms platforms;
+		platforms.frameNumber = reader.read<int32_t>(0x1);
+		platforms.platform = reader.read<FodPlatforms::Side>(0x5);
+		platforms.height = reader.read<float>(0x6);
+		return platforms;
+	}
+
+	WhispyBlowDirection parseWhispyBlowDirection(BlockReader& reader, size_t size) {
+		WhispyBlowDirection direction;
+		direction.frameNumber = reader.read<int32_t>(0x1);
+		direction.direction = reader.read<WhispyBlowDirection::Direction>(0x5);
+		return direction;
+	}
+
+	StadiumTransformation parseStadiumTransformations(BlockReader& reader, size_t size) {
+		StadiumTransformation transformations;
+		transformations.frameNumber = reader.read<int32_t>(0x1);
+		transformations.transformationEvent = reader.read<StadiumTransformation::Event>(0x5);
+		transformations.transformationType = reader.read<StadiumTransformation::Type>(0x7);
+		return transformations;
 	}
 
 	Frame::End parseFrameEnd(BlockReader& reader, size_t size) {

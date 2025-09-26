@@ -6,6 +6,7 @@
 #include <string_view>
 
 #include "CppSlippi/Model/Enums/Character.h"
+#include "CppSlippi/Utils/Defines.h"
 #include "CppSlippi/Utils/Enums.h"
 #include "CppSlippi/Utils/Exceptions.h"
 
@@ -81,7 +82,7 @@ public:
 
 // Helper class for mapping between costumes and colors. Each instance of this
 // class represents one CssCharacter.
-class CostumeMapper {
+class CPP_SLIPPI_API CostumeMapper {
 public:
 	CostumeMapper(const CostumeMapper&) = delete;
 	CostumeMapper(CostumeMapper&&) = delete;

@@ -4,12 +4,13 @@
 #include <string_view>
 
 #include "CppSlippi/Options.h"
+#include "CppSlippi/Utils/Defines.h"
 #include "CppSlippi/Utils/Exceptions.h"
 
 
 namespace cpp_slippi::parsing {
 
-class ShiftJisConverter {
+class CPP_SLIPPI_API ShiftJisConverter {
 public:
 	explicit ShiftJisConverter(bool fullwidthToHalfwidth, Options::ShiftJisErrorHandling errorHandling)
 		: fullwidthToHalfwidth_(fullwidthToHalfwidth), errorHandling_(errorHandling) {}

@@ -27,8 +27,11 @@ public:
 	virtual void frameStart(Frame::Start& start) {}
 	virtual void framePre(Pre& pre) {}
 	virtual void framePost(Post& post) {}
-	virtual void frameEnd(Frame::End& end) {}
 	virtual void frameItem(Item& item) {}
+	virtual void fodPlatforms(FodPlatforms& platforms) {}
+	virtual void whispyBlowDirection(WhispyBlowDirection& whispyDirection) {}
+	virtual void stadiumTransformation(StadiumTransformation& transformation) {}
+	virtual void frameEnd(Frame::End& end) {}
 	virtual void frame(Frame& frame) {}
 	virtual void allFrames(std::vector<Frame>& frames) {}
 	virtual void metadata(Metadata& metadata, nlohmann::json& rawMetadata) {}

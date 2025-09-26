@@ -24,6 +24,7 @@
 #include "Model/Matchers.h"
 
 
+using testing::ElementsAre;
 using testing::Eq;
 using testing::Field;
 using testing::Ge;
@@ -568,6 +569,124 @@ TEST(CppSlippi, v3_16) {
 	EXPECT_THAT(game.frames[407].ports[Port::P1]->leader.post->instanceHitBy, Optional(71));
 	EXPECT_THAT(game.frames[407].ports[Port::P1]->leader.post->instanceId, Optional(82));
 	EXPECT_THAT(game.frames[407].items.front().instanceId, Optional(82));
+}
+
+TEST(CppSlippi, v3_17) {
+	Game game = parseGame("v3.18_stadium.slp");
+
+	EXPECT_THAT(game.frames[244].ports[Port::P1]->leader.pre->rawCstickX, Optional(-27));
+	EXPECT_THAT(game.frames[244].ports[Port::P1]->leader.pre->rawCstickY, Optional(21));
+}
+
+TEST(CppSlippi, v3_18_FodPlatforms) {
+	Game game = parseGame("v3.18_fod.slp");
+
+	EXPECT_THAT(game.frames[0].fodPlatforms, IsEmpty());
+	EXPECT_THAT(
+		game.frames[643].fodPlatforms, ElementsAre(
+			FodPlatformsEq({
+				.frameNumber = 520,
+				.platform = FodPlatforms::Side::RIGHT,
+				.height = 27.9f,
+			})));
+	EXPECT_THAT(
+		game.frames[1019].fodPlatforms, ElementsAre(
+			FodPlatformsEq({
+				.frameNumber = 896,
+				.platform = FodPlatforms::Side::LEFT,
+				.height = 20.3f,
+			})));
+	EXPECT_THAT(
+		game.frames[16623].fodPlatforms, ElementsAre(
+			FodPlatformsEq({
+				.frameNumber = 16500,
+				.platform = FodPlatforms::Side::LEFT,
+				.height = 30.976786f,
+			}),
+			FodPlatformsEq({
+				.frameNumber = 16500,
+				.platform = FodPlatforms::Side::RIGHT,
+				.height = 4.599939f,
+			})));
+}
+
+TEST(CppSlippi, v3_18_WhispyBlowDirection) {
+	Game game = parseGame("v3.18_dreamland.slp");
+
+	EXPECT_THAT(game.frames[0].whispyBlowDirection, Eq(std::nullopt));
+	EXPECT_THAT(
+		game.frames[878].whispyBlowDirection,
+		Optional(WhispyBlowDirectionEq({
+			.frameNumber = 755,
+			.direction = WhispyBlowDirection::Direction::RIGHT,
+		})));
+	EXPECT_THAT(
+		game.frames[1152].whispyBlowDirection,
+		Optional(WhispyBlowDirectionEq({
+			.frameNumber = 1029,
+			.direction = WhispyBlowDirection::Direction::NONE,
+		})));
+	EXPECT_THAT(
+		game.frames[3597].whispyBlowDirection,
+		Optional(WhispyBlowDirectionEq({
+			.frameNumber = 3474,
+			.direction = WhispyBlowDirection::Direction::LEFT,
+		})));
+}
+
+TEST(CppSlippi, v3_18_StadiumTransformations) {
+	Game game = parseGame("v3.18_stadium.slp");
+
+	EXPECT_THAT(game.frames[0].stadiumTransformation, Eq(std::nullopt));
+	EXPECT_THAT(
+		game.frames[3731].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 3608,
+			.transformationEvent = StadiumTransformation::Event::UNKNOWN1,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
+	EXPECT_THAT(
+		game.frames[3732].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 3609,
+			.transformationEvent = StadiumTransformation::Event::INITIALIZE,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
+	EXPECT_THAT(
+		game.frames[3733].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 3610,
+			.transformationEvent = StadiumTransformation::Event::ON_MONITOR,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
+	EXPECT_THAT(
+		game.frames[4035].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 3912,
+			.transformationEvent = StadiumTransformation::Event::RECEDING,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
+	EXPECT_THAT(
+		game.frames[4216].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 4093,
+			.transformationEvent = StadiumTransformation::Event::RISING,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
+	EXPECT_THAT(
+		game.frames[4337].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 4214,
+			.transformationEvent = StadiumTransformation::Event::FINALIZE,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
+	EXPECT_THAT(
+		game.frames[4338].stadiumTransformation,
+		Optional(StadiumTransformationEq({
+			.frameNumber = 4215,
+			.transformationEvent = StadiumTransformation::Event::FINISH,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		})));
 }
 
 TEST(CppSlippi, CorruptNames_ParsedSafely) {

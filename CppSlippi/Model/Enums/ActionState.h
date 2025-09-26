@@ -4,6 +4,7 @@
 #include <string_view>
 
 #include "CppSlippi/Model/Enums/Character.h"
+#include "CppSlippi/Utils/Defines.h"
 #include "CppSlippi/Utils/Enums.h"
 #include "CppSlippi/Utils/Exceptions.h"
 
@@ -2631,7 +2632,7 @@ class SubsetMapper;
 
 // Helper class for mapping between ActionStates and Actions. Each instance of
 // this class represents one CssCharacter.
-class ActionMapper {
+class CPP_SLIPPI_API ActionMapper {
 public:
 	ActionMapper(const ActionMapper&) = delete;
 	ActionMapper(ActionMapper&&) = delete;

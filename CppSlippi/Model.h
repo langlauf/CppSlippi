@@ -9,10 +9,13 @@
 #include "CppSlippi/Model/Enums/Item.h"
 #include "CppSlippi/Model/Enums/Port.h"
 #include "CppSlippi/Model/Enums/Stage.h"
+#include "CppSlippi/Model/FodPlatforms.h"
 #include "CppSlippi/Model/Frame.h"
 #include "CppSlippi/Model/Game.h"
 #include "CppSlippi/Model/Item.h"
 #include "CppSlippi/Model/Metadata.h"
 #include "CppSlippi/Model/Player.h"
 #include "CppSlippi/Model/Primitives.h"
+#include "CppSlippi/Model/StadiumTransformation.h"
+#include "CppSlippi/Model/WhispyBlowDirection.h"
 // IWYU pragma: end_exports

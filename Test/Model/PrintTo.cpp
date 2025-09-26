@@ -49,6 +49,18 @@ void PrintTo(const Item& item, std::ostream* os) {
 	*os << "Item";
 }
 
+void PrintTo(const FodPlatforms& item, std::ostream* os) {
+	*os << "FodPlatforms";
+}
+
+void PrintTo(const WhispyBlowDirection& item, std::ostream* os) {
+	*os << "WhispyBlowDirection";
+}
+
+void PrintTo(const StadiumTransformation& item, std::ostream* os) {
+	*os << "StadiumTransformation";
+}
+
 void PrintTo(const Frame::Player& player, std::ostream* os) {
 	*os << "Frame::Player";
 }

@@ -23,6 +23,9 @@ public:
 	virtual void processPre(Pre&) = 0;
 	virtual void processPost(Post&) = 0;
 	virtual void processItem(Item&) = 0;
+	virtual void processFodPlatforms(FodPlatforms&) = 0;
+	virtual void processWhispyBlowDirection(WhispyBlowDirection&) = 0;
+	virtual void processStadiumTransformations(StadiumTransformation&) = 0;
 	virtual void processEnd(Frame::End&) = 0;
 	virtual void finish() = 0;
 
@@ -37,9 +40,12 @@ protected:
 	void sendEvent(Frame::Start& start);
 	void sendEvent(Pre& pre);
 	void sendEvent(Post& post);
-	void sendEvent(Frame::End& end);
 	void sendEvent(Item& item);
-	
+	void sendEvent(FodPlatforms& platforms);
+	void sendEvent(WhispyBlowDirection& whispyDirection);
+	void sendEvent(StadiumTransformation& transformations);
+	void sendEvent(Frame::End& end);
+
 	template<typename E>
 	void maybeSendEvent(std::optional<E>& event) {
 		if (event) {

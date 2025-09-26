@@ -73,6 +73,18 @@ public:
 		frame_->items.push_back(item);
 	}
 
+	void addEvent(const FodPlatforms& platforms) {
+		frame_->fodPlatforms.push_back(platforms);
+	}
+
+	void addEvent(const WhispyBlowDirection& whispyDirection) {
+		frame_->whispyBlowDirection = whispyDirection;
+	}
+
+	void addEvent(const StadiumTransformation& transformations) {
+		frame_->stadiumTransformation = transformations;
+	}
+
 	void addEvent(const Frame::End& end) {
 		frame_->end = end;
 	}
@@ -91,6 +103,18 @@ public:
 
 	bool hasEvent(const Item& item) const {
 		return hasItem(item.spawnId);
+	}
+
+	bool hasEvent(const FodPlatforms& platforms) const {
+		return hasFodPlatforms(platforms.platform);
+	}
+
+	bool hasEvent(const WhispyBlowDirection& whispyDirection) const {
+		return hasWhispyBlowDirection();
+	}
+
+	bool hasEvent(const StadiumTransformation& transformations) const {
+		return hasStadiumTransformations();
 	}
 
 	bool hasEvent(const Frame::End& end) const {
@@ -151,12 +175,23 @@ private:
 	bool hasItem(uint32_t spawnId) const {
 		// There are relatively few items at a time, so a linear search is
 		// faster than using a hash table.
-		for (const Item& item : getFrame().items) {
-			if (item.spawnId == spawnId) {
-				return true;
-			}
-		}
-		return false;
+		return std::ranges::any_of(
+			getFrame().items,
+			[spawnId](const auto& item) { return item.spawnId == spawnId; });
+	}
+
+	bool hasFodPlatforms(FodPlatforms::Side platform) const {
+		return std::ranges::any_of(
+			getFrame().fodPlatforms,
+			[platform](const auto& fodPlatforms) { return fodPlatforms.platform == platform; });
+	}
+
+	bool hasWhispyBlowDirection() const {
+		return getFrame().whispyBlowDirection.has_value();
+	}
+
+	bool hasStadiumTransformations() const {
+		return getFrame().stadiumTransformation.has_value();
 	}
 
 	bool hasEnd() const {
@@ -194,6 +229,21 @@ public:
 	void processItem(Item& item) override {
 		processEvent(item);
 		handlers_.frameItem(item);
+	}
+
+	void processFodPlatforms(FodPlatforms& platforms) override {
+		processEvent(platforms);
+		handlers_.fodPlatforms(platforms);
+	}
+
+	void processWhispyBlowDirection(WhispyBlowDirection& whispyDirection) override {
+		processEvent(whispyDirection);
+		handlers_.whispyBlowDirection(whispyDirection);
+	}
+
+	void processStadiumTransformations(StadiumTransformation& transformations) override {
+		processEvent(transformations);
+		handlers_.stadiumTransformation(transformations);
 	}
 
 	void processEnd(Frame::End& end) override {
@@ -253,37 +303,51 @@ public:
 		processEvent(item);
 	}
 
+	void processFodPlatforms(FodPlatforms& platforms) override {
+		processEvent(platforms);
+	}
+
+	void processWhispyBlowDirection(WhispyBlowDirection& whispyDirection) override {
+		processEvent(whispyDirection);
+	}
+
+	void processStadiumTransformations(StadiumTransformation& transformations) override {
+		processEvent(transformations);
+	}
+
 	void processEnd(Frame::End& end) override {
 		processEvent(end);
 	}
 
 	void finish() override {
 		if (buildingFrame_) {
-			sendAllFrameEvents(frames_.back());
+			sendFrame(frames_.back());
 		}
 		sendAllFrames();
 	}
 
 private:
 	template<Event E>
-	void processEvent(const E& event) {
+	void processEvent(E& event) {
 		std::optional<FrameBuilder> builder =
 			!buildingFrame_ ? std::nullopt : std::optional(FrameBuilder(&frames_.back()));
 		if (event.frameNumber > currentFrameNumber_) {
 			// A new frame. Send the current frame and reset.
 			checkExpectedNextFrame(event.frameNumber, currentFrameNumber_ + 1);
 			if (builder) {
-				sendAllFrameEvents(builder->getFrame());
+				sendFrame(builder->getFrame());
 			}
+			sendEvent(event);
 			builder = FrameBuilder(&frames_.emplace_back(), ++currentFrameNumber_);
 			builder->addEvent(event);
 			buildingFrame_ = true;
 		} else if (builder && event.frameNumber == currentFrameNumber_ && !builder->hasEvent(event)) {
+			sendEvent(event);
 			builder->addEvent(event);
 		} else if (builder) {
 			// This is a rollback frame, the current frame must be done, so send
 			// it and reset. Then ignore the new event.
-			sendAllFrameEvents(builder->getFrame());
+			sendFrame(builder->getFrame());
 			buildingFrame_ = false;
 		} else {
 			// The remaining case is a rollback frame without an active current
@@ -316,6 +380,18 @@ public:
 
 	void processItem(Item& item) override {
 		processEvent(item);
+	}
+
+	void processFodPlatforms(FodPlatforms& platforms) override {
+		processEvent(platforms);
+	}
+
+	void processWhispyBlowDirection(WhispyBlowDirection& whispyDirection) override {
+		processEvent(whispyDirection);
+	}
+
+	void processStadiumTransformations(StadiumTransformation& transformations) override {
+		processEvent(transformations);
 	}
 
 	void processEnd(Frame::End& end) override {
@@ -402,12 +478,24 @@ void FrameEventProcessor::sendEvent(Post& post) {
 	handlers_.framePost(post);
 }
 
-void FrameEventProcessor::sendEvent(Frame::End& end) {
-	handlers_.frameEnd(end);
-}
-
 void FrameEventProcessor::sendEvent(Item& item) {
 	handlers_.frameItem(item);
+}
+
+void FrameEventProcessor::sendEvent(FodPlatforms& platforms) {
+	handlers_.fodPlatforms(platforms);
+}
+
+void FrameEventProcessor::sendEvent(WhispyBlowDirection& whispyDirection) {
+	handlers_.whispyBlowDirection(whispyDirection);
+}
+
+void FrameEventProcessor::sendEvent(StadiumTransformation& transformations) {
+	handlers_.stadiumTransformation(transformations);
+}
+
+void FrameEventProcessor::sendEvent(Frame::End& end) {
+	handlers_.frameEnd(end);
 }
 
 void FrameEventProcessor::sendPlayerData(Frame::Player::Data& data) {
@@ -429,6 +517,11 @@ void FrameEventProcessor::sendAllFrameEvents(Frame& frame) {
 	for (Item& item : frame.items) {
 		sendEvent(item);
 	}
+	for (FodPlatforms& fodPlatforms : frame.fodPlatforms) {
+		sendEvent(fodPlatforms);
+	}
+	maybeSendEvent(frame.whispyBlowDirection);
+	maybeSendEvent(frame.stadiumTransformation);
 	maybeSendEvent(frame.end);
 	sendFrame(frame);
 }

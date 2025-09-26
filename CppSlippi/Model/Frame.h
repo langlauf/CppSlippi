@@ -10,9 +10,12 @@
 #include "CppSlippi/Model/Enums/Attack.h"
 #include "CppSlippi/Model/Enums/Character.h"
 #include "CppSlippi/Model/Enums/Port.h"
+#include "CppSlippi/Model/FodPlatforms.h"
 #include "CppSlippi/Model/Item.h"
 #include "CppSlippi/Model/Primitives.h"
+#include "CppSlippi/Model/StadiumTransformation.h"
 #include "CppSlippi/Model/Triggers.h"
+#include "CppSlippi/Model/WhispyBlowDirection.h"
 #include "CppSlippi/Utils/Endian.h"
 #include "CppSlippi/Utils/PortArray.h"
 
@@ -112,6 +115,12 @@ struct Pre {
 
 	// added(3.15.0) Raw y analog controller input (for UCF)
 	std::optional<int8_t> rawAnalogY;
+
+	// added(3.17.0) Raw X axis c-stick input. Required for 1.0 cardinals
+	std::optional<int8_t> rawCstickX;
+
+	// added(3.17.0) Raw Y axis c-stick input. Required for 1.0 cardinals
+	std::optional<int8_t> rawCstickY;
 
 	friend bool operator==(const Pre&, const Pre&) = default;
 };
@@ -291,6 +300,15 @@ struct Frame {
 
 	// added(2.2.0) End-of-frame data
 	std::optional<End> end;
+
+	// added(3.18.0) Stage events
+	std::vector<FodPlatforms> fodPlatforms;
+
+	// added(3.18.0) Stage events
+	std::optional<WhispyBlowDirection> whispyBlowDirection;
+
+	// added(3.18.0) Stage events
+	std::optional<StadiumTransformation> stadiumTransformation;
 
 	friend bool operator==(const Frame&, const Frame&) = default;
 };

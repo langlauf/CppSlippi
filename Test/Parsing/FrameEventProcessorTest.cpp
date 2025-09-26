@@ -97,8 +97,34 @@ public:
 		return *this;
 	}
 
+	FrameBuilder& addFodPlatforms() {
+		frame_.fodPlatforms.push_back(FodPlatforms {
+			.frameNumber = frame_.frameNumber,
+			.platform = FodPlatforms::Side::RIGHT,
+			.height = 0.5,
+		});
+		return *this;
+	}
+
+	FrameBuilder& addWhispyBlowDirection() {
+		frame_.whispyBlowDirection = {
+			.frameNumber = frame_.frameNumber,
+			.direction = WhispyBlowDirection::Direction::LEFT,
+		};
+		return *this;
+	}
+
+	FrameBuilder& addStadiumTransformations() {
+		frame_.stadiumTransformation = {
+			.frameNumber = frame_.frameNumber,
+			.transformationEvent = StadiumTransformation::Event::RISING,
+			.transformationType = StadiumTransformation::Type::GRASS,
+		};
+		return *this;
+	}
+
 	FrameBuilder& addEnd(std::optional<int32_t> latestFinalizedFrame = std::nullopt) {
-		frame_.end= Frame::End{
+		frame_.end = Frame::End{
 			.frameNumber = frame_.frameNumber,
 			.latestFinalizedFrame = latestFinalizedFrame,
 		};
@@ -170,6 +196,9 @@ public:
 	MOCK_METHOD(void, framePre, (Pre&), (override));
 	MOCK_METHOD(void, framePost, (Post&), (override));
 	MOCK_METHOD(void, frameItem, (Item&), (override));
+	MOCK_METHOD(void, fodPlatforms, (FodPlatforms&), (override));
+	MOCK_METHOD(void, whispyBlowDirection, (WhispyBlowDirection&), (override));
+	MOCK_METHOD(void, stadiumTransformation, (StadiumTransformation&), (override));
 	MOCK_METHOD(void, frameEnd, (Frame::End&), (override));
 	MOCK_METHOD(void, frame, (Frame&), (override));
 	MOCK_METHOD(void, allFrames, (std::vector<Frame>&), (override));
@@ -201,6 +230,15 @@ protected:
 		}
 		for (auto& item : frame.items) {
 			processor->processItem(item);
+		}
+		for (auto& fodPlatforms : frame.fodPlatforms) {
+			processor->processFodPlatforms(fodPlatforms);
+		}
+		if (frame.whispyBlowDirection) {
+			processor->processWhispyBlowDirection(*frame.whispyBlowDirection);
+		}
+		if (frame.stadiumTransformation) {
+			processor->processStadiumTransformations(*frame.stadiumTransformation);
 		}
 		if (frame.end) {
 			processor->processEnd(*frame.end);
@@ -261,6 +299,9 @@ TEST_P(FrameEventProcessorTest, ReturnsAllFrameEventsBeforeFrame) {
 		.addPlayer(Port::P2)
 		.addPlayer(Port::P2, true)
 		.addItem()
+		.addFodPlatforms()
+		.addWhispyBlowDirection()
+		.addStadiumTransformations()
 		.addEnd()
 		.build();
 
@@ -274,6 +315,9 @@ TEST_P(FrameEventProcessorTest, ReturnsAllFrameEventsBeforeFrame) {
 		EXPECT_CALL(handlers, framePre(PreEq(*frame.ports[Port::P2]->follower->pre)));
 		EXPECT_CALL(handlers, framePost(PostEq(*frame.ports[Port::P2]->follower->post)));
 		EXPECT_CALL(handlers, frameItem(ItemEq(frame.items[0])));
+		EXPECT_CALL(handlers, fodPlatforms(FodPlatformsEq(frame.fodPlatforms[0])));
+		EXPECT_CALL(handlers, whispyBlowDirection(WhispyBlowDirectionEq(*frame.whispyBlowDirection)));
+		EXPECT_CALL(handlers, stadiumTransformation(StadiumTransformationEq(*frame.stadiumTransformation)));
 		EXPECT_CALL(handlers, frameEnd(FrameEndEq(*frame.end)));
 		EXPECT_CALL(handlers, frame(FrameEq(frame)));
 		EXPECT_CALL(handlers, allFrames(testing::Pointwise(FrameEq(), {frame})));
@@ -293,8 +337,12 @@ TEST_P(FrameEventProcessorTest, ReturnsOnlyIncludedFrameEvents) {
 	EXPECT_CALL(handlers, framePre(_));
 	EXPECT_CALL(handlers, framePost(_));
 	EXPECT_CALL(handlers, frameItem(_));
+	EXPECT_CALL(handlers, fodPlatforms(_)).Times(0);
+	EXPECT_CALL(handlers, whispyBlowDirection(_)).Times(0);
+	EXPECT_CALL(handlers, stadiumTransformation(_)).Times(0);
 	EXPECT_CALL(handlers, frameEnd(_)).Times(0);
 	EXPECT_CALL(handlers, frame(FrameEq(frame)));
+	EXPECT_CALL(handlers, allFrames(testing::Pointwise(FrameEq(), {frame})));
 
 	sendFrameEvents(frame);
 	processor->finish();
@@ -305,8 +353,12 @@ TEST_P(FrameEventProcessorTest, NoFrames_ReturnsNothing) {
 	EXPECT_CALL(handlers, framePre(_)).Times(0);
 	EXPECT_CALL(handlers, framePost(_)).Times(0);
 	EXPECT_CALL(handlers, frameItem(_)).Times(0);
+	EXPECT_CALL(handlers, fodPlatforms(_)).Times(0);
+	EXPECT_CALL(handlers, whispyBlowDirection(_)).Times(0);
+	EXPECT_CALL(handlers, stadiumTransformation(_)).Times(0);
 	EXPECT_CALL(handlers, frameEnd(_)).Times(0);
 	EXPECT_CALL(handlers, frame(_)).Times(0);
+	EXPECT_CALL(handlers, allFrames(testing::IsEmpty()));
 
 	processor->finish();
 }
@@ -337,6 +389,11 @@ TEST_F(AllFrameProcessorTest, ReturnsAllFrames) {
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame2Rollback)));
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame3Rollback)));
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame4Rollback)));
+	EXPECT_CALL(
+		handlers,
+		allFrames(testing::Pointwise(FrameEq(),
+			{frames.frame1, frames.frame1Rollback, frames.frame2, frames.frame2Rollback,
+			 frames.frame3, frames.frame4, frames.frame3Rollback, frames.frame4Rollback})));
 
 	sendFrameEvents(frames.frame1);
 	sendFrameEvents(frames.frame1Rollback);
@@ -372,6 +429,10 @@ TEST_F(FirstFrameProcessorTest, ReturnsFirstFrame) {
 		.Times(0);
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame4Rollback)))
 		.Times(0);
+	EXPECT_CALL(
+		handlers,
+		allFrames(testing::Pointwise(FrameEq(),
+			{frames.frame1, frames.frame2, frames.frame3, frames.frame4})));
 
 	sendFrameEvents(frames.frame1);
 	sendFrameEvents(frames.frame1Rollback);
@@ -420,6 +481,10 @@ TEST_F(LastFrameProcessorTest, ReturnsLastFrame) {
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame2Rollback)));
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame3Rollback)));
 	EXPECT_CALL(handlers, frame(FrameEq(frames.frame4Rollback)));
+	EXPECT_CALL(
+		handlers,
+		allFrames(testing::Pointwise(FrameEq(),
+			{frames.frame1Rollback, frames.frame2Rollback, frames.frame3Rollback, frames.frame4Rollback})));
 
 	sendFrameEvents(frames.frame1);
 	sendFrameEvents(frames.frame1Rollback);
@@ -445,6 +510,7 @@ TEST_F(LastFrameProcessorTest, WithoutLastFinalizedFrame_ReturnsLastFrame) {
 
 	EXPECT_CALL(handlers, frame(FrameEq(frame))).Times(0);
 	EXPECT_CALL(handlers, frame(FrameEq(rollbackFrame)));
+	EXPECT_CALL(handlers, allFrames(testing::Pointwise(FrameEq(), {rollbackFrame})));
 
 	sendFrameEvents(frame);
 	sendFrameEvents(rollbackFrame);
